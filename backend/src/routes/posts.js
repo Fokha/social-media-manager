@@ -10,6 +10,54 @@ router.get('/', authenticate, async (req, res, next) => {
   try {
     const { status, platform, page = 1, limit = 20 } = req.query;
 
+    // Demo mode: return mock posts
+    if (req.user.isDemo) {
+      const demoPosts = [
+        {
+          id: 'demo-post-1',
+          content: '🚀 Excited to announce our new product launch! Stay tuned for more updates. #Innovation #NewProduct',
+          contentType: 'text',
+          status: 'published',
+          publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+          createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+          socialAccount: { id: 'demo-twitter-1', platform: 'twitter', platformUsername: '@demo_brand' },
+          analytics: { likes: 124, comments: 18, shares: 32 }
+        },
+        {
+          id: 'demo-post-2',
+          content: 'Behind the scenes at our office! Great team, great vibes. 💼✨ #TeamWork #CompanyCulture',
+          contentType: 'image',
+          status: 'published',
+          publishedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+          createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(),
+          socialAccount: { id: 'demo-instagram-1', platform: 'instagram', platformUsername: 'demo.brand' },
+          analytics: { likes: 256, comments: 42, shares: 15 }
+        },
+        {
+          id: 'demo-post-3',
+          content: 'Thrilled to share insights from our latest industry report. Key takeaways inside!',
+          contentType: 'text',
+          status: 'scheduled',
+          scheduledAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          createdAt: new Date().toISOString(),
+          socialAccount: { id: 'demo-linkedin-1', platform: 'linkedin', platformUsername: 'Demo Brand Company' },
+          analytics: null
+        }
+      ];
+
+      return res.json({
+        success: true,
+        data: {
+          posts: demoPosts,
+          pagination: {
+            total: demoPosts.length,
+            page: parseInt(page),
+            pages: 1
+          }
+        }
+      });
+    }
+
     const where = { userId: req.user.id };
     if (status) where.status = status;
 

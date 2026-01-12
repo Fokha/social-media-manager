@@ -7,6 +7,47 @@ const { AppError } = require('../middleware/errorHandler');
 // GET /api/accounts - List all connected accounts
 router.get('/', authenticate, async (req, res, next) => {
   try {
+    // Demo mode: return mock accounts
+    if (req.user.isDemo) {
+      return res.json({
+        success: true,
+        data: {
+          accounts: [
+            {
+              id: 'demo-twitter-1',
+              platform: 'twitter',
+              platformUsername: '@demo_brand',
+              platformDisplayName: 'Demo Brand',
+              profilePicture: null,
+              isActive: true,
+              lastSyncAt: new Date().toISOString(),
+              createdAt: new Date().toISOString()
+            },
+            {
+              id: 'demo-instagram-1',
+              platform: 'instagram',
+              platformUsername: 'demo.brand',
+              platformDisplayName: 'Demo Brand Official',
+              profilePicture: null,
+              isActive: true,
+              lastSyncAt: new Date().toISOString(),
+              createdAt: new Date().toISOString()
+            },
+            {
+              id: 'demo-linkedin-1',
+              platform: 'linkedin',
+              platformUsername: 'Demo Brand Company',
+              platformDisplayName: 'Demo Brand',
+              profilePicture: null,
+              isActive: true,
+              lastSyncAt: new Date().toISOString(),
+              createdAt: new Date().toISOString()
+            }
+          ]
+        }
+      });
+    }
+
     const accounts = await SocialAccount.findAll({
       where: { userId: req.user.id, isActive: true },
       attributes: [
