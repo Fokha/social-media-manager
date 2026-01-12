@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../../../../services/oauth_service.dart';
 
 // Events
 abstract class AuthEvent extends Equatable {
@@ -44,6 +45,22 @@ class LogoutRequested extends AuthEvent {}
 
 class RefreshUser extends AuthEvent {}
 
+// OAuth Events
+class GoogleSignInRequested extends AuthEvent {}
+
+class AppleSignInRequested extends AuthEvent {}
+
+class MicrosoftSignInRequested extends AuthEvent {}
+
+class OAuthSignInCompleted extends AuthEvent {
+  final OAuthUser oauthUser;
+
+  const OAuthSignInCompleted(this.oauthUser);
+
+  @override
+  List<Object?> get props => [oauthUser];
+}
+
 // States
 abstract class AuthState extends Equatable {
   const AuthState();
@@ -79,6 +96,7 @@ class AuthError extends AuthState {
 // Bloc
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _authRepository;
+  final OAuthService _oauthService = OAuthService.instance;
 
   AuthBloc(this._authRepository) : super(AuthInitial()) {
     on<CheckAuthStatus>(_onCheckAuthStatus);
@@ -86,6 +104,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<RegisterRequested>(_onRegisterRequested);
     on<LogoutRequested>(_onLogoutRequested);
     on<RefreshUser>(_onRefreshUser);
+    // OAuth handlers
+    on<GoogleSignInRequested>(_onGoogleSignInRequested);
+    on<AppleSignInRequested>(_onAppleSignInRequested);
+    on<MicrosoftSignInRequested>(_onMicrosoftSignInRequested);
+    on<OAuthSignInCompleted>(_onOAuthSignInCompleted);
   }
 
   Future<void> _onCheckAuthStatus(
@@ -177,5 +200,127 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     }
     return 'Something went wrong. Please try again.';
+  }
+
+  // OAuth Handlers
+  Future<void> _onGoogleSignInRequested(
+    GoogleSignInRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    try {
+      final result = await _oauthService.signInWithGoogle();
+      if (result.success && result.user != null) {
+        final user = _oauthUserToUser(result.user!);
+        emit(AuthAuthenticated(user));
+      } else {
+        if (result.errorCode == 'cancelled') {
+          emit(AuthUnauthenticated());
+        } else {
+          emit(AuthError(result.error ?? 'Google sign in failed'));
+        }
+      }
+    } catch (e) {
+      emit(AuthError(_getErrorMessage(e)));
+    }
+  }
+
+  Future<void> _onAppleSignInRequested(
+    AppleSignInRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    try {
+      final result = await _oauthService.signInWithApple();
+      if (result.success && result.user != null) {
+        final user = _oauthUserToUser(result.user!);
+        emit(AuthAuthenticated(user));
+      } else {
+        if (result.errorCode == 'cancelled') {
+          emit(AuthUnauthenticated());
+        } else {
+          emit(AuthError(result.error ?? 'Apple sign in failed'));
+        }
+      }
+    } catch (e) {
+      emit(AuthError(_getErrorMessage(e)));
+    }
+  }
+
+  Future<void> _onMicrosoftSignInRequested(
+    MicrosoftSignInRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    try {
+      final result = await _oauthService.signInWithMicrosoft();
+      if (result.success && result.user != null) {
+        final user = _oauthUserToUser(result.user!);
+        emit(AuthAuthenticated(user));
+      } else {
+        if (result.errorCode == 'cancelled') {
+          emit(AuthUnauthenticated());
+        } else {
+          emit(AuthError(result.error ?? 'Microsoft sign in failed'));
+        }
+      }
+    } catch (e) {
+      emit(AuthError(_getErrorMessage(e)));
+    }
+  }
+
+  Future<void> _onOAuthSignInCompleted(
+    OAuthSignInCompleted event,
+    Emitter<AuthState> emit,
+  ) async {
+    try {
+      final user = _oauthUserToUser(event.oauthUser);
+      emit(AuthAuthenticated(user));
+    } catch (e) {
+      emit(AuthError(_getErrorMessage(e)));
+    }
+  }
+
+  /// Convert OAuthUser to app User model
+  User _oauthUserToUser(OAuthUser oauthUser) {
+    return User(
+      id: oauthUser.id,
+      email: oauthUser.email,
+      firstName: oauthUser.firstName,
+      lastName: oauthUser.lastName,
+      avatar: oauthUser.photoUrl,
+      role: UserRole.user,
+      isActive: true,
+      isEmailVerified: true,
+      lastLoginAt: DateTime.now(),
+      settings: const UserSettings(
+        notifications: NotificationSettings(
+          email: true,
+          push: true,
+          sms: false,
+        ),
+        timezone: 'UTC',
+        language: 'en',
+      ),
+      subscription: Subscription(
+        id: 'demo_sub',
+        plan: 'pro',
+        status: 'active',
+        cancelAtPeriodEnd: false,
+        limits: const SubscriptionLimits(
+          socialAccounts: 10,
+          postsPerMonth: 100,
+          aiCredits: 50,
+          teamMembers: 5,
+          scheduledPosts: 20,
+        ),
+        usage: const SubscriptionUsage(
+          socialAccounts: 0,
+          postsThisMonth: 0,
+          aiCreditsUsed: 0,
+          teamMembers: 1,
+        ),
+      ),
+    );
   }
 }

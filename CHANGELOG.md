@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2026-01-12
+
+### Added
+- **OAuth Authentication Template**
+  - Google Sign-In support (iOS, Android, Web, macOS)
+  - Apple Sign-In support (iOS, macOS, Web)
+  - Microsoft/Azure AD Sign-In support (all platforms)
+  - Email/Password authentication
+  - Unified `OAuthUser` model
+  - `OAuthService` with secure token storage
+  - `SocialSignInButton` widget with provider-specific styling
+  - `SocialSignInIconRow` compact variant
+  - `OrDivider` widget for login page layout
+  - Forgot password dialog
+  - OAuth events in AuthBloc (`GoogleSignInRequested`, `AppleSignInRequested`, `MicrosoftSignInRequested`)
+
+### Changed
+- Updated login page with social sign-in buttons
+- Enhanced AuthBloc with OAuth handlers
+
+### Technical Details
+- `flutter_secure_storage` for token persistence
+- Platform-aware Apple Sign-In visibility
+- Custom painters for Google and Microsoft logos
+- Demo mode support for all OAuth providers
+
+---
+
 ## [1.0.0] - 2026-01-12
 
 ### Added

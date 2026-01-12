@@ -62,6 +62,8 @@ dependencies:
   # Auth
   flutter_facebook_auth: ^6.0.4
   google_sign_in: ^6.2.1
+  # sign_in_with_apple: ^6.1.0  # Uncomment for Apple Sign-In (iOS/macOS/Web)
+  # msal_flutter: ^3.0.0       # Uncomment for Microsoft/Azure AD Sign-In
 
   # Payments
   flutter_stripe: ^10.0.0

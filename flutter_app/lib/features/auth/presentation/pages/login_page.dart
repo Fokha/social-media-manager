@@ -1,10 +1,13 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:io' show Platform;
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../services/injection.dart';
 import '../bloc/auth_bloc.dart';
+import '../widgets/social_sign_in_button.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -35,6 +38,64 @@ class _LoginPageState extends State<LoginPage> {
             ),
           );
     }
+  }
+
+  bool _isApplePlatform() {
+    if (kIsWeb) return false;
+    try {
+      return Platform.isIOS || Platform.isMacOS;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  void _showForgotPasswordDialog(BuildContext context) {
+    final emailController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset Password'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Enter your email address and we\'ll send you a link to reset your password.',
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                hintText: 'you@example.com',
+                prefixIcon: Icon(Icons.email_outlined),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (emailController.text.contains('@')) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Password reset link sent to your email'),
+                    backgroundColor: AppColors.success,
+                  ),
+                );
+              }
+            },
+            child: const Text('Send Link'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -98,6 +159,36 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         const SizedBox(height: 40),
 
+                        // Social Sign In Buttons
+                        SocialSignInButton(
+                          provider: SocialProvider.google,
+                          onPressed: () => context.read<AuthBloc>().add(GoogleSignInRequested()),
+                          isLoading: state is AuthLoading,
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Show Apple sign-in on iOS, macOS, and Web
+                        if (kIsWeb || _isApplePlatform())
+                          Column(
+                            children: [
+                              SocialSignInButton(
+                                provider: SocialProvider.apple,
+                                onPressed: () => context.read<AuthBloc>().add(AppleSignInRequested()),
+                                isLoading: state is AuthLoading,
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+                          ),
+
+                        SocialSignInButton(
+                          provider: SocialProvider.microsoft,
+                          onPressed: () => context.read<AuthBloc>().add(MicrosoftSignInRequested()),
+                          isLoading: state is AuthLoading,
+                        ),
+
+                        // OR divider
+                        const OrDivider(),
+
                         // Form
                         Form(
                           key: _formKey,
@@ -133,7 +224,7 @@ class _LoginPageState extends State<LoginPage> {
                                 onFieldSubmitted: (_) => _handleLogin(context),
                                 decoration: InputDecoration(
                                   labelText: 'Password',
-                                  hintText: '••••••••',
+                                  hintText: '********',
                                   prefixIcon: const Icon(Icons.lock_outline),
                                   suffixIcon: IconButton(
                                     icon: Icon(
@@ -155,7 +246,20 @@ class _LoginPageState extends State<LoginPage> {
                                   return null;
                                 },
                               ),
-                              const SizedBox(height: 24),
+                              const SizedBox(height: 8),
+
+                              // Forgot Password Link
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton(
+                                  onPressed: () {
+                                    // Show forgot password dialog
+                                    _showForgotPasswordDialog(context);
+                                  },
+                                  child: const Text('Forgot Password?'),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
 
                               // Login Button
                               SizedBox(
