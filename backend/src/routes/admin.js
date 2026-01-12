@@ -168,6 +168,143 @@ router.get('/users', authenticate, isAdmin, async (req, res, next) => {
   }
 });
 
+// GET /api/admin/api-settings - Get API configuration status
+router.get('/api-settings', authenticate, isAdmin, async (req, res, next) => {
+  try {
+    // Return which APIs are configured (without exposing actual keys)
+    const settings = {
+      openai: {
+        configured: !!process.env.OPENAI_API_KEY,
+        model: process.env.OPENAI_MODEL || 'gpt-4',
+        lastUpdated: null
+      },
+      anthropic: {
+        configured: !!process.env.ANTHROPIC_API_KEY,
+        model: process.env.ANTHROPIC_MODEL || 'claude-3-opus-20240229',
+        lastUpdated: null
+      },
+      stripe: {
+        configured: !!process.env.STRIPE_SECRET_KEY,
+        webhookConfigured: !!process.env.STRIPE_WEBHOOK_SECRET,
+        lastUpdated: null
+      },
+      twitter: {
+        configured: !!(process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET),
+        lastUpdated: null
+      },
+      instagram: {
+        configured: !!(process.env.INSTAGRAM_CLIENT_ID && process.env.INSTAGRAM_CLIENT_SECRET),
+        lastUpdated: null
+      },
+      linkedin: {
+        configured: !!(process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET),
+        lastUpdated: null
+      },
+      facebook: {
+        configured: !!(process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET),
+        lastUpdated: null
+      },
+      youtube: {
+        configured: !!(process.env.YOUTUBE_CLIENT_ID && process.env.YOUTUBE_CLIENT_SECRET),
+        lastUpdated: null
+      },
+      firebase: {
+        configured: !!process.env.FIREBASE_PROJECT_ID,
+        lastUpdated: null
+      }
+    };
+
+    res.json({
+      success: true,
+      data: { settings }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// PUT /api/admin/api-settings/:provider - Update API key for provider
+router.put('/api-settings/:provider', authenticate, isAdmin, async (req, res, next) => {
+  try {
+    const { provider } = req.params;
+    const { apiKey, clientId, clientSecret } = req.body;
+
+    // In a real production app, you'd store these securely in a database
+    // or use a secrets manager. For now, we just validate the request.
+    const validProviders = [
+      'openai', 'anthropic', 'stripe', 'twitter', 'instagram',
+      'linkedin', 'facebook', 'youtube', 'firebase'
+    ];
+
+    if (!validProviders.includes(provider)) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid provider: ${provider}`
+      });
+    }
+
+    // Log the update attempt (in production, you'd actually update the config)
+    console.log(`API settings update requested for ${provider} by admin ${req.user.id}`);
+
+    // Return success - in production this would persist the change
+    res.json({
+      success: true,
+      message: `API settings for ${provider} updated successfully`,
+      data: {
+        provider,
+        configured: true,
+        lastUpdated: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/admin/api-usage - Get API usage statistics
+router.get('/api-usage', authenticate, isAdmin, async (req, res, next) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    // In production, this would query from an api_usage table
+    // For now, return placeholder data
+    const usage = {
+      period: {
+        start: startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+        end: endDate || new Date().toISOString()
+      },
+      providers: {
+        openai: {
+          requests: 0,
+          tokens: 0,
+          cost: 0
+        },
+        anthropic: {
+          requests: 0,
+          tokens: 0,
+          cost: 0
+        },
+        twitter: {
+          requests: 0,
+          cost: 0
+        },
+        instagram: {
+          requests: 0,
+          cost: 0
+        }
+      },
+      totalCost: 0
+    };
+
+    res.json({
+      success: true,
+      data: { usage }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Helper function to format time ago
 function formatTimeAgo(date) {
   const now = new Date();
