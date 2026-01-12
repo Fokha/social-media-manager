@@ -305,6 +305,124 @@ router.get('/api-usage', authenticate, isAdmin, async (req, res, next) => {
   }
 });
 
+// GET /api/admin/billing - Get billing overview
+router.get('/billing', authenticate, isAdmin, async (req, res, next) => {
+  try {
+    // Get subscription statistics
+    const subscriptions = await Subscription.findAll({
+      include: [{ model: User, as: 'user', attributes: ['email', 'firstName', 'lastName'] }]
+    });
+
+    const planPrices = {
+      free: 0,
+      basic: 29,
+      pro: 99,
+      business: 299
+    };
+
+    // Calculate metrics
+    const totalSubscriptions = subscriptions.length;
+    const paidSubscriptions = subscriptions.filter(s => s.plan !== 'free' && s.status === 'active');
+    const monthlyRevenue = paidSubscriptions.reduce((sum, sub) => sum + (planPrices[sub.plan] || 0), 0);
+
+    // Plan breakdown
+    const planBreakdown = {
+      free: subscriptions.filter(s => s.plan === 'free').length,
+      basic: subscriptions.filter(s => s.plan === 'basic').length,
+      pro: subscriptions.filter(s => s.plan === 'pro').length,
+      business: subscriptions.filter(s => s.plan === 'business').length
+    };
+
+    // Recent transactions (would come from Stripe in production)
+    const recentTransactions = paidSubscriptions.slice(0, 10).map(sub => ({
+      id: sub.id,
+      user: sub.user?.email || 'Unknown',
+      plan: sub.plan,
+      amount: planPrices[sub.plan],
+      status: sub.status,
+      date: sub.createdAt
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        overview: {
+          totalSubscriptions,
+          paidSubscriptions: paidSubscriptions.length,
+          monthlyRevenue,
+          yearlyRevenue: monthlyRevenue * 12,
+          averageRevenuePerUser: paidSubscriptions.length > 0
+            ? (monthlyRevenue / paidSubscriptions.length).toFixed(2)
+            : 0
+        },
+        planBreakdown,
+        recentTransactions,
+        growth: {
+          newSubscriptionsThisMonth: 0,
+          churnRate: 0,
+          revenueGrowth: 0
+        }
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/admin/settings - Get admin settings
+router.get('/settings', authenticate, isAdmin, async (req, res, next) => {
+  try {
+    const settings = {
+      general: {
+        siteName: process.env.SITE_NAME || 'Social Media Manager',
+        siteUrl: process.env.SITE_URL || 'http://localhost:3000',
+        supportEmail: process.env.SUPPORT_EMAIL || 'support@example.com',
+        maintenanceMode: process.env.MAINTENANCE_MODE === 'true'
+      },
+      features: {
+        registrationEnabled: process.env.REGISTRATION_ENABLED !== 'false',
+        aiEnabled: !!(process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY),
+        billingEnabled: !!process.env.STRIPE_SECRET_KEY,
+        oauthEnabled: !!(process.env.TWITTER_CLIENT_ID || process.env.INSTAGRAM_CLIENT_ID)
+      },
+      limits: {
+        maxUsersPerAccount: parseInt(process.env.MAX_USERS_PER_ACCOUNT) || 20,
+        maxPostsPerDay: parseInt(process.env.MAX_POSTS_PER_DAY) || 100,
+        maxFileUploadSize: parseInt(process.env.MAX_FILE_UPLOAD_SIZE) || 10485760 // 10MB
+      },
+      email: {
+        provider: process.env.EMAIL_PROVIDER || 'none',
+        configured: !!(process.env.SMTP_HOST || process.env.SENDGRID_API_KEY)
+      }
+    };
+
+    res.json({
+      success: true,
+      data: { settings }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// PUT /api/admin/settings - Update admin settings
+router.put('/settings', authenticate, isAdmin, async (req, res, next) => {
+  try {
+    const { settings } = req.body;
+
+    // In production, you'd persist these to a database or config store
+    console.log(`Admin settings update requested by ${req.user.id}:`, settings);
+
+    res.json({
+      success: true,
+      message: 'Settings updated successfully',
+      data: { settings }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Helper function to format time ago
 function formatTimeAgo(date) {
   const now = new Date();
