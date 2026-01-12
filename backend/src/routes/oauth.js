@@ -91,6 +91,26 @@ router.get('/:platform/url', authenticate, async (req, res, next) => {
           isActive: true,
           lastSyncAt: new Date().toISOString(),
           createdAt: new Date().toISOString()
+        },
+        whatsapp: {
+          id: `demo-whatsapp-${Date.now()}`,
+          platform: 'whatsapp',
+          platformUsername: '+1 555-123-4567',
+          platformDisplayName: 'Business WhatsApp',
+          profilePicture: null,
+          isActive: true,
+          lastSyncAt: new Date().toISOString(),
+          createdAt: new Date().toISOString()
+        },
+        telegram: {
+          id: `demo-telegram-${Date.now()}`,
+          platform: 'telegram',
+          platformUsername: '@new_telegram_channel',
+          platformDisplayName: 'New Telegram Channel',
+          profilePicture: null,
+          isActive: true,
+          lastSyncAt: new Date().toISOString(),
+          createdAt: new Date().toISOString()
         }
       };
 
