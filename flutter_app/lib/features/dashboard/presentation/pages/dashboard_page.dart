@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../services/api_service.dart';
 import '../../../../services/injection.dart';
 import '../bloc/dashboard_bloc.dart';
 import '../widgets/stat_card.dart';
@@ -553,11 +554,13 @@ class _DashboardView extends StatelessWidget {
 
   void _showAIAssistantDialog(BuildContext context) {
     final textController = TextEditingController();
+    bool isGenerating = false;
+    String aiResponse = '';
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setState) {
+        builder: (context, setOuterState) {
           return AlertDialog(
             title: Row(
               children: [
@@ -584,23 +587,26 @@ class _DashboardView extends StatelessWidget {
                     style: TextStyle(color: AppColors.grey600),
                   ),
                   const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                  GridView.count(
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    mainAxisSpacing: 10,
+                    crossAxisSpacing: 10,
+                    childAspectRatio: 2.8,
                     children: [
                       _AIQuickAction(
                         label: 'Generate post',
                         icon: Iconsax.edit,
                         onTap: () {
-                          Navigator.pop(ctx);
-                          context.go('/posts/create');
+                          textController.text = 'Generate a social media post about: ';
                         },
                       ),
                       _AIQuickAction(
                         label: 'Improve content',
                         icon: Iconsax.magic_star,
                         onTap: () {
-                          textController.text = 'Improve my content: ';
+                          textController.text = 'Improve this content: ';
                         },
                       ),
                       _AIQuickAction(
@@ -630,6 +636,69 @@ class _DashboardView extends StatelessWidget {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  StatefulBuilder(
+                    builder: (context, setDialogState) {
+                      return Column(
+                        children: [
+                          if (aiResponse.isNotEmpty) ...[
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppColors.success.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(Iconsax.cpu, size: 16, color: AppColors.success),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'AI Response:',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.success,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(aiResponse),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                          if (isGenerating)
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: AppColors.info,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'AI is thinking...',
+                                    style: TextStyle(color: AppColors.info),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
@@ -639,16 +708,33 @@ class _DashboardView extends StatelessWidget {
                 child: const Text('Cancel'),
               ),
               ElevatedButton.icon(
-                onPressed: () {
-                  if (textController.text.isNotEmpty) {
-                    Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('AI processing: "${textController.text}"')),
-                    );
-                  }
-                },
+                onPressed: isGenerating
+                    ? null
+                    : () async {
+                        if (textController.text.isNotEmpty) {
+                          setOuterState(() => isGenerating = true);
+
+                          // Call AI API
+                          try {
+                            final apiService = getIt<ApiService>();
+                            final response = await apiService.generateContent(
+                              prompt: textController.text,
+                            );
+                            final content = response.data['data']['content'] as String? ?? 'No response generated';
+                            setOuterState(() {
+                              aiResponse = content;
+                              isGenerating = false;
+                            });
+                          } catch (e) {
+                            setOuterState(() {
+                              aiResponse = 'Generated content for: "${textController.text}"\n\nThis is a demo response. Connect your OpenAI API key in Admin settings for real AI generation.';
+                              isGenerating = false;
+                            });
+                          }
+                        }
+                      },
                 icon: const Icon(Iconsax.send_1, size: 18),
-                label: const Text('Send'),
+                label: Text(isGenerating ? 'Generating...' : 'Generate'),
               ),
             ],
           );
