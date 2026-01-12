@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../bloc/settings_cubit.dart';
@@ -149,7 +152,7 @@ class SettingsPage extends StatelessWidget {
                     iconColor: AppColors.info,
                     title: 'Manage Connections',
                     subtitle: 'View and manage connected social accounts',
-                    onTap: () => _showSnackbar(context, 'Opening connected accounts...'),
+                    onTap: () => context.go('/accounts'),
                   ),
                   _buildDivider(),
                   _buildActionTile(
@@ -182,7 +185,7 @@ class SettingsPage extends StatelessWidget {
                     iconColor: AppColors.grey500,
                     title: 'Privacy Policy',
                     subtitle: 'Read our privacy policy',
-                    onTap: () => _showSnackbar(context, 'Opening Privacy Policy...'),
+                    onTap: () => _showPrivacyPolicyDialog(context),
                   ),
                   _buildDivider(),
                   _buildActionTile(
@@ -191,7 +194,7 @@ class SettingsPage extends StatelessWidget {
                     iconColor: AppColors.grey500,
                     title: 'Terms of Service',
                     subtitle: 'Read our terms of service',
-                    onTap: () => _showSnackbar(context, 'Opening Terms of Service...'),
+                    onTap: () => _showTermsOfServiceDialog(context),
                   ),
                 ]),
                 const SizedBox(height: 24),
@@ -636,109 +639,154 @@ class SettingsPage extends StatelessWidget {
   }
 
   void _showApiKeysDialog(BuildContext context) {
+    String apiKey = 'sk_live_a1b2c3d4e5f6g7h8i9j0';
+    bool showKey = false;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('API Keys'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.grey100,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'sk_live_••••••••••••••••',
-                      style: TextStyle(fontFamily: 'monospace', fontSize: 13),
-                    ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('API Keys'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.grey100,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  IconButton(
-                    icon: const Icon(Iconsax.copy, size: 18),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          showKey ? apiKey : 'sk_live_••••••••••••••••',
+                          style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(showKey ? Iconsax.eye_slash : Iconsax.eye, size: 18),
+                        onPressed: () => setState(() => showKey = !showKey),
+                      ),
+                      IconButton(
+                        icon: const Icon(Iconsax.copy, size: 18),
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: apiKey));
+                          _showSnackbar(context, 'API key copied to clipboard');
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
                     onPressed: () {
-                      _showSnackbar(context, 'API key copied to clipboard');
+                      setState(() {
+                        apiKey = 'sk_live_${DateTime.now().millisecondsSinceEpoch}';
+                        showKey = true;
+                      });
+                      _showSnackbar(context, 'New API key generated');
                     },
+                    icon: const Icon(Iconsax.refresh),
+                    label: const Text('Generate New Key'),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Keep your API key secure. Do not share it publicly.',
+                  style: TextStyle(fontSize: 11, color: AppColors.grey500),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  _showSnackbar(context, 'New API key generated');
-                },
-                icon: const Icon(Iconsax.refresh),
-                label: const Text('Generate New Key'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Close'),
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
 
   void _showExportDataDialog(BuildContext context) {
+    bool exportPosts = true;
+    bool exportMessages = true;
+    bool exportAnalytics = true;
+    bool exportSettings = false;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Export Data'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Select what data you want to export:'),
-            const SizedBox(height: 16),
-            CheckboxListTile(
-              value: true,
-              onChanged: (_) {},
-              title: const Text('Posts'),
-              dense: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Export Data'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Select what data you want to export:'),
+                const SizedBox(height: 16),
+                CheckboxListTile(
+                  value: exportPosts,
+                  onChanged: (v) => setState(() => exportPosts = v ?? false),
+                  title: const Text('Posts'),
+                  subtitle: const Text('All your published and draft posts'),
+                  dense: true,
+                ),
+                CheckboxListTile(
+                  value: exportMessages,
+                  onChanged: (v) => setState(() => exportMessages = v ?? false),
+                  title: const Text('Messages'),
+                  subtitle: const Text('Conversations and message history'),
+                  dense: true,
+                ),
+                CheckboxListTile(
+                  value: exportAnalytics,
+                  onChanged: (v) => setState(() => exportAnalytics = v ?? false),
+                  title: const Text('Analytics'),
+                  subtitle: const Text('Performance data and insights'),
+                  dense: true,
+                ),
+                CheckboxListTile(
+                  value: exportSettings,
+                  onChanged: (v) => setState(() => exportSettings = v ?? false),
+                  title: const Text('Account Settings'),
+                  subtitle: const Text('Preferences and configurations'),
+                  dense: true,
+                ),
+              ],
             ),
-            CheckboxListTile(
-              value: true,
-              onChanged: (_) {},
-              title: const Text('Messages'),
-              dense: true,
-            ),
-            CheckboxListTile(
-              value: true,
-              onChanged: (_) {},
-              title: const Text('Analytics'),
-              dense: true,
-            ),
-            CheckboxListTile(
-              value: false,
-              onChanged: (_) {},
-              title: const Text('Account Settings'),
-              dense: true,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.pop(context);
-              _showSnackbar(context, 'Data export started. You will receive an email when ready.');
-            },
-            icon: const Icon(Iconsax.document_download),
-            label: const Text('Export'),
-          ),
-        ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton.icon(
+                onPressed: (exportPosts || exportMessages || exportAnalytics || exportSettings)
+                    ? () {
+                        Navigator.pop(ctx);
+                        final items = <String>[];
+                        if (exportPosts) items.add('Posts');
+                        if (exportMessages) items.add('Messages');
+                        if (exportAnalytics) items.add('Analytics');
+                        if (exportSettings) items.add('Settings');
+                        _showSnackbar(
+                          context,
+                          'Exporting: ${items.join(", ")}. You will receive an email when ready.',
+                        );
+                      }
+                    : null,
+                icon: const Icon(Iconsax.document_download),
+                label: const Text('Export'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -855,6 +903,146 @@ class SettingsPage extends StatelessWidget {
               backgroundColor: AppColors.error,
             ),
             child: const Text('Delete Account'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPrivacyPolicyDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Iconsax.document_text, color: AppColors.primary),
+            const SizedBox(width: 12),
+            const Text('Privacy Policy'),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Last updated: January 12, 2026', style: TextStyle(color: AppColors.grey500, fontSize: 12)),
+                const SizedBox(height: 16),
+                const Text('1. Information We Collect', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                const Text(
+                  'We collect information you provide directly, including account details, social media connections, and content you create through our platform.',
+                  style: TextStyle(fontSize: 13),
+                ),
+                const SizedBox(height: 16),
+                const Text('2. How We Use Your Information', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                const Text(
+                  'Your information is used to provide and improve our services, manage your social media accounts, and personalize your experience.',
+                  style: TextStyle(fontSize: 13),
+                ),
+                const SizedBox(height: 16),
+                const Text('3. Data Security', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                const Text(
+                  'We implement industry-standard security measures to protect your data. OAuth tokens are encrypted and stored securely.',
+                  style: TextStyle(fontSize: 13),
+                ),
+                const SizedBox(height: 16),
+                const Text('4. Your Rights', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                const Text(
+                  'You can access, export, or delete your data at any time through the settings page.',
+                  style: TextStyle(fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              final url = Uri.parse('https://example.com/privacy');
+              if (await canLaunchUrl(url)) {
+                await launchUrl(url, mode: LaunchMode.externalApplication);
+              }
+            },
+            icon: const Icon(Iconsax.export_3, size: 16),
+            label: const Text('Full Version'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showTermsOfServiceDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Iconsax.info_circle, color: AppColors.primary),
+            const SizedBox(width: 12),
+            const Text('Terms of Service'),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Last updated: January 12, 2026', style: TextStyle(color: AppColors.grey500, fontSize: 12)),
+                const SizedBox(height: 16),
+                const Text('1. Acceptance of Terms', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                const Text(
+                  'By using Social Media Manager, you agree to these terms. If you disagree with any part, please do not use our services.',
+                  style: TextStyle(fontSize: 13),
+                ),
+                const SizedBox(height: 16),
+                const Text('2. Use of Service', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                const Text(
+                  'You are responsible for maintaining the security of your account and all activities under your account.',
+                  style: TextStyle(fontSize: 13),
+                ),
+                const SizedBox(height: 16),
+                const Text('3. Content Guidelines', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                const Text(
+                  'You agree not to post content that is illegal, harmful, or violates third-party rights.',
+                  style: TextStyle(fontSize: 13),
+                ),
+                const SizedBox(height: 16),
+                const Text('4. Service Modifications', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                const Text(
+                  'We reserve the right to modify or discontinue the service at any time with reasonable notice.',
+                  style: TextStyle(fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              final url = Uri.parse('https://example.com/terms');
+              if (await canLaunchUrl(url)) {
+                await launchUrl(url, mode: LaunchMode.externalApplication);
+              }
+            },
+            icon: const Icon(Iconsax.export_3, size: 16),
+            label: const Text('Full Version'),
           ),
         ],
       ),

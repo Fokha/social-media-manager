@@ -50,7 +50,7 @@ class _DashboardView extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Iconsax.notification),
-            onPressed: () {},
+            onPressed: () => _showNotificationsDialog(context),
           ),
           const SizedBox(width: 8),
         ],
@@ -320,7 +320,7 @@ class _DashboardView extends StatelessWidget {
             ),
             trailing: IconButton(
               icon: Icon(Iconsax.message, size: 18, color: AppColors.grey500),
-              onPressed: () {},
+              onPressed: () => context.go('/messages'),
             ),
           );
         },
@@ -453,7 +453,7 @@ class _DashboardView extends StatelessWidget {
             title: 'AI Assistant',
             icon: Iconsax.cpu,
             color: AppColors.info,
-            onTap: () {},
+            onTap: () => _showAIAssistantDialog(context),
           ),
         ],
       ),
@@ -464,6 +464,196 @@ class _DashboardView extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => _FindMeDialog(),
+    );
+  }
+
+  void _showNotificationsDialog(BuildContext context) {
+    final notifications = [
+      {'title': 'New follower on Instagram', 'time': '5m ago', 'icon': Iconsax.instagram, 'read': false},
+      {'title': 'Your post reached 1K likes', 'time': '1h ago', 'icon': Iconsax.heart, 'read': false},
+      {'title': 'New message from @techbrand', 'time': '2h ago', 'icon': Iconsax.message, 'read': true},
+      {'title': 'Scheduled post published', 'time': '3h ago', 'icon': Iconsax.tick_circle, 'read': true},
+      {'title': 'AI credits running low', 'time': '1d ago', 'icon': Iconsax.cpu, 'read': true},
+    ];
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            const Text('Notifications'),
+            const Spacer(),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('All notifications marked as read')),
+                );
+              },
+              child: const Text('Mark all read'),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: notifications.length,
+            itemBuilder: (context, index) {
+              final notif = notifications[index];
+              return ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: (notif['read'] as bool)
+                      ? AppColors.grey100
+                      : AppColors.primary.withValues(alpha: 0.1),
+                  child: Icon(
+                    notif['icon'] as IconData,
+                    size: 18,
+                    color: (notif['read'] as bool) ? AppColors.grey500 : AppColors.primary,
+                  ),
+                ),
+                title: Text(
+                  notif['title'] as String,
+                  style: TextStyle(
+                    fontWeight: (notif['read'] as bool) ? FontWeight.normal : FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                subtitle: Text(notif['time'] as String, style: const TextStyle(fontSize: 12)),
+                trailing: (notif['read'] as bool)
+                    ? null
+                    : Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.go('/settings');
+            },
+            child: const Text('Settings'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAIAssistantDialog(BuildContext context) {
+    final textController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.info.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(Iconsax.cpu, color: AppColors.info),
+                ),
+                const SizedBox(width: 12),
+                const Text('AI Assistant'),
+              ],
+            ),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'How can I help you today?',
+                    style: TextStyle(color: AppColors.grey600),
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _AIQuickAction(
+                        label: 'Generate post',
+                        icon: Iconsax.edit,
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          context.go('/posts/create');
+                        },
+                      ),
+                      _AIQuickAction(
+                        label: 'Improve content',
+                        icon: Iconsax.magic_star,
+                        onTap: () {
+                          textController.text = 'Improve my content: ';
+                        },
+                      ),
+                      _AIQuickAction(
+                        label: 'Generate hashtags',
+                        icon: Iconsax.hashtag,
+                        onTap: () {
+                          textController.text = 'Generate hashtags for: ';
+                        },
+                      ),
+                      _AIQuickAction(
+                        label: 'Reply suggestion',
+                        icon: Iconsax.message,
+                        onTap: () {
+                          textController.text = 'Suggest a reply to: ';
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: textController,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      hintText: 'Ask me anything...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton.icon(
+                onPressed: () {
+                  if (textController.text.isNotEmpty) {
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('AI processing: "${textController.text}"')),
+                    );
+                  }
+                },
+                icon: const Icon(Iconsax.send_1, size: 18),
+                label: const Text('Send'),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -692,6 +882,124 @@ class _FindMeDialogState extends State<_FindMeDialog> {
     }
   }
 
+  void _exportResults(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Export Results'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Iconsax.document_text),
+              title: const Text('Export as CSV'),
+              onTap: () {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Results exported as CSV')),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Iconsax.document),
+              title: const Text('Export as PDF'),
+              onTap: () {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Results exported as PDF')),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Iconsax.copy),
+              title: const Text('Copy to Clipboard'),
+              onTap: () {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Results copied to clipboard')),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showResultDetails(BuildContext context, _FindMeResult result) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: _getPlatformColor(result.platform).withValues(alpha: 0.1),
+              child: Icon(
+                _getTypeIcon(result.type),
+                color: _getPlatformColor(result.platform),
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                result.type.toUpperCase(),
+                style: const TextStyle(fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(result.content),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Icon(Iconsax.user, size: 16, color: AppColors.grey500),
+                const SizedBox(width: 8),
+                Text(result.author, style: TextStyle(color: _getPlatformColor(result.platform))),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Iconsax.chart, size: 16, color: AppColors.grey500),
+                const SizedBox(width: 8),
+                Text(result.engagement),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Iconsax.clock, size: 16, color: AppColors.grey500),
+                const SizedBox(width: 8),
+                Text(result.time),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Opening in browser...')),
+              );
+            },
+            icon: const Icon(Iconsax.export_3, size: 16),
+            label: const Text('View Original'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -842,7 +1150,7 @@ class _FindMeDialogState extends State<_FindMeDialog> {
                     ),
                     const Spacer(),
                     TextButton.icon(
-                      onPressed: () {},
+                      onPressed: () => _exportResults(context),
                       icon: const Icon(Iconsax.export_1, size: 16),
                       label: const Text('Export'),
                     ),
@@ -891,7 +1199,7 @@ class _FindMeDialogState extends State<_FindMeDialog> {
                         ),
                         trailing: IconButton(
                           icon: Icon(Iconsax.arrow_right_3, size: 18, color: AppColors.grey500),
-                          onPressed: () {},
+                          onPressed: () => _showResultDetails(context, result),
                         ),
                       ),
                     );
@@ -963,4 +1271,42 @@ class _FindMeResult {
     required this.engagement,
     required this.time,
   });
+}
+
+class _AIQuickAction extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _AIQuickAction({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.grey200),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: AppColors.info),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(fontSize: 12, color: AppColors.grey700),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

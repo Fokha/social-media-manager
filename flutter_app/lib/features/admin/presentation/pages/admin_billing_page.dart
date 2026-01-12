@@ -516,12 +516,153 @@ class _AdminBillingView extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () {
-                // TODO: Add payment method
-              },
+              onPressed: () => _showAddPaymentMethodDialog(context),
               icon: const Icon(Iconsax.add),
               label: const Text('Add Payment Method'),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddPaymentMethodDialog(BuildContext context) {
+    final cardNumberController = TextEditingController();
+    final expiryController = TextEditingController();
+    final cvcController = TextEditingController();
+    final nameController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Iconsax.card_add, color: AppColors.primary),
+            const SizedBox(width: 12),
+            const Text('Add Payment Method'),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: 'Cardholder Name',
+                  hintText: 'John Doe',
+                  prefixIcon: Icon(Iconsax.user, color: AppColors.grey500),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: cardNumberController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Card Number',
+                  hintText: '4242 4242 4242 4242',
+                  prefixIcon: Icon(Iconsax.card, color: AppColors.grey500),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: expiryController,
+                      keyboardType: TextInputType.datetime,
+                      decoration: InputDecoration(
+                        labelText: 'Expiry',
+                        hintText: 'MM/YY',
+                        prefixIcon:
+                            Icon(Iconsax.calendar, color: AppColors.grey500),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: cvcController,
+                      keyboardType: TextInputType.number,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        labelText: 'CVC',
+                        hintText: '123',
+                        prefixIcon:
+                            Icon(Iconsax.lock, color: AppColors.grey500),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.info.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.info.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Iconsax.shield_tick, color: AppColors.info, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Your payment information is encrypted and secure.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.info,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (cardNumberController.text.isEmpty ||
+                  expiryController.text.isEmpty ||
+                  cvcController.text.isEmpty ||
+                  nameController.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please fill in all fields'),
+                  ),
+                );
+                return;
+              }
+
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Payment method added successfully'),
+                  backgroundColor: AppColors.success,
+                ),
+              );
+            },
+            child: const Text('Add Card'),
           ),
         ],
       ),

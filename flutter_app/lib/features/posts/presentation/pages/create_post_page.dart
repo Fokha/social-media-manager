@@ -22,6 +22,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
   final Set<String> _selectedPlatforms = {};
   DateTime? _scheduledAt;
   bool _showAIPanel = false;
+  final List<Map<String, dynamic>> _selectedMedia = [];
 
   @override
   void dispose() {
@@ -271,38 +272,120 @@ class _CreatePostPageState extends State<CreatePostPage> {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 8),
-                  InkWell(
-                    onTap: () {
-                      // TODO: Implement media picker
-                    },
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 32),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: AppColors.grey300,
-                          style: BorderStyle.solid,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Iconsax.image,
-                            size: 32,
-                            color: AppColors.grey400,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Add photos or videos',
-                            style: TextStyle(color: AppColors.grey500),
-                          ),
-                        ],
+                  if (_selectedMedia.isNotEmpty) ...[
+                    SizedBox(
+                      height: 100,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _selectedMedia.length + 1,
+                        itemBuilder: (context, index) {
+                          if (index == _selectedMedia.length) {
+                            // Add more button
+                            return InkWell(
+                              onTap: () => _showMediaPicker(context),
+                              child: Container(
+                                width: 100,
+                                margin: const EdgeInsets.only(right: 8),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: AppColors.grey300),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Iconsax.add, color: AppColors.grey500),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Add more',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.grey500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
+                          final media = _selectedMedia[index];
+                          return Stack(
+                            children: [
+                              Container(
+                                width: 100,
+                                margin: const EdgeInsets.only(right: 8),
+                                decoration: BoxDecoration(
+                                  color: AppColors.grey100,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    media['type'] == 'video'
+                                        ? Iconsax.video
+                                        : Iconsax.image,
+                                    color: AppColors.primary,
+                                    size: 32,
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                top: 4,
+                                right: 12,
+                                child: InkWell(
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedMedia.removeAt(index);
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black54,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Iconsax.close_circle,
+                                      size: 16,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ),
-                  ),
+                  ] else
+                    InkWell(
+                      onTap: () => _showMediaPicker(context),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 32),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: AppColors.grey300,
+                            style: BorderStyle.solid,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Iconsax.image,
+                              size: 32,
+                              color: AppColors.grey400,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Add photos or videos',
+                              style: TextStyle(color: AppColors.grey500),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 24),
 
                   // Schedule
@@ -445,16 +528,157 @@ class _CreatePostPageState extends State<CreatePostPage> {
   }
 
   void _saveDraft(BuildContext context) {
-    if (_contentController.text.isEmpty) {
+    if (_contentController.text.isEmpty && _selectedMedia.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please add some content')),
+        const SnackBar(content: Text('Please add some content or media')),
       );
       return;
     }
 
-    // TODO: Implement save draft
+    // Save draft via PostsBloc
+    context.read<PostsBloc>().add(
+      SaveDraft(
+        content: _contentController.text,
+        platforms: _selectedPlatforms.toList(),
+        scheduledAt: _scheduledAt,
+        mediaCount: _selectedMedia.length,
+      ),
+    );
+
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Draft saved')),
+      SnackBar(
+        content: const Text('Draft saved successfully'),
+        backgroundColor: AppColors.success,
+        action: SnackBarAction(
+          label: 'View Drafts',
+          textColor: Colors.white,
+          onPressed: () => context.go('/posts?tab=drafts'),
+        ),
+      ),
+    );
+  }
+
+  void _showMediaPicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Add Media',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  IconButton(
+                    icon: const Icon(Iconsax.close_circle),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Iconsax.camera, color: AppColors.primary),
+                ),
+                title: const Text('Take Photo'),
+                subtitle: const Text('Use camera to capture'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _addMedia('image', 'Camera photo');
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.info.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Iconsax.gallery, color: AppColors.info),
+                ),
+                title: const Text('Choose from Gallery'),
+                subtitle: const Text('Select existing photos'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _addMedia('image', 'Gallery photo');
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.youtube.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Iconsax.video, color: AppColors.youtube),
+                ),
+                title: const Text('Record Video'),
+                subtitle: const Text('Capture new video'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _addMedia('video', 'Recorded video');
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Iconsax.video_play, color: AppColors.secondary),
+                ),
+                title: const Text('Choose Video'),
+                subtitle: const Text('Select existing video'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _addMedia('video', 'Gallery video');
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _addMedia(String type, String source) {
+    if (_selectedMedia.length >= 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Maximum 10 media items allowed')),
+      );
+      return;
+    }
+
+    setState(() {
+      _selectedMedia.add({
+        'id': DateTime.now().millisecondsSinceEpoch.toString(),
+        'type': type,
+        'source': source,
+      });
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$source added'),
+        backgroundColor: AppColors.success,
+        duration: const Duration(seconds: 1),
+      ),
     );
   }
 

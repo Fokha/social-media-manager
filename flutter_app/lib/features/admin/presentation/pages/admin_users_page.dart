@@ -143,13 +143,57 @@ class _AdminUsersViewState extends State<_AdminUsersView> {
                     Row(
                       children: [
                         IconButton(
-                          icon: const Icon(Iconsax.arrow_left_2),
-                          onPressed: () {},
+                          icon: Icon(
+                            Iconsax.arrow_left_2,
+                            color: state.currentPage > 1
+                                ? AppColors.primary
+                                : AppColors.grey300,
+                          ),
+                          onPressed: state.currentPage > 1
+                              ? () {
+                                  context.read<AdminBloc>().add(
+                                        LoadUsers(
+                                          page: state.currentPage - 1,
+                                          limit: state.usersPerPage,
+                                        ),
+                                      );
+                                }
+                              : null,
                         ),
-                        const Text('Page 1'),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'Page ${state.currentPage} of ${state.totalPages}',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
                         IconButton(
-                          icon: const Icon(Iconsax.arrow_right_3),
-                          onPressed: () {},
+                          icon: Icon(
+                            Iconsax.arrow_right_3,
+                            color: state.currentPage < state.totalPages
+                                ? AppColors.primary
+                                : AppColors.grey300,
+                          ),
+                          onPressed: state.currentPage < state.totalPages
+                              ? () {
+                                  context.read<AdminBloc>().add(
+                                        LoadUsers(
+                                          page: state.currentPage + 1,
+                                          limit: state.usersPerPage,
+                                        ),
+                                      );
+                                }
+                              : null,
                         ),
                       ],
                     ),

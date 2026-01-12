@@ -64,6 +64,9 @@ class AdminState extends Equatable {
   final List<Map<String, dynamic>> apiProviders;
   final Map<String, dynamic> billingData;
   final int totalUsers;
+  final int currentPage;
+  final int totalPages;
+  final int usersPerPage;
   final String? error;
   final String? successMessage;
 
@@ -74,6 +77,9 @@ class AdminState extends Equatable {
     this.apiProviders = const [],
     this.billingData = const {},
     this.totalUsers = 0,
+    this.currentPage = 1,
+    this.totalPages = 1,
+    this.usersPerPage = 20,
     this.error,
     this.successMessage,
   });
@@ -85,6 +91,9 @@ class AdminState extends Equatable {
     List<Map<String, dynamic>>? apiProviders,
     Map<String, dynamic>? billingData,
     int? totalUsers,
+    int? currentPage,
+    int? totalPages,
+    int? usersPerPage,
     String? error,
     String? successMessage,
   }) {
@@ -95,6 +104,9 @@ class AdminState extends Equatable {
       apiProviders: apiProviders ?? this.apiProviders,
       billingData: billingData ?? this.billingData,
       totalUsers: totalUsers ?? this.totalUsers,
+      currentPage: currentPage ?? this.currentPage,
+      totalPages: totalPages ?? this.totalPages,
+      usersPerPage: usersPerPage ?? this.usersPerPage,
       error: error,
       successMessage: successMessage,
     );
@@ -108,6 +120,9 @@ class AdminState extends Equatable {
         apiProviders,
         billingData,
         totalUsers,
+        currentPage,
+        totalPages,
+        usersPerPage,
         error,
         successMessage,
       ];
@@ -163,11 +178,15 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
       final data = response.data['data'];
       final users = List<Map<String, dynamic>>.from(data['users'] ?? []);
       final total = data['total'] ?? 0;
+      final totalPages = (total / event.limit).ceil();
 
       emit(state.copyWith(
         isLoading: false,
         users: users,
         totalUsers: total,
+        currentPage: event.page,
+        totalPages: totalPages > 0 ? totalPages : 1,
+        usersPerPage: event.limit,
       ));
     } catch (e) {
       emit(state.copyWith(

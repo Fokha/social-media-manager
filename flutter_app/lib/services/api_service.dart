@@ -76,12 +76,14 @@ class ApiService {
     required List<String> platforms,
     List<String>? mediaUrls,
     String? scheduledAt,
+    String? status,
   }) async {
     return _dio.post(ApiEndpoints.posts, data: {
       'content': content,
       'platforms': platforms,
       if (mediaUrls != null) 'mediaUrls': mediaUrls,
       if (scheduledAt != null) 'scheduledAt': scheduledAt,
+      if (status != null) 'status': status,
     });
   }
 
