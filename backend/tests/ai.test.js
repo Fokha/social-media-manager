@@ -1,45 +1,53 @@
 const request = require('supertest');
-const express = require('express');
-
-// Mock the dependencies
-jest.mock('../src/models', () => ({
-  Subscription: {
-    update: jest.fn()
-  }
-}));
-
-// Create test app
-const app = express();
-app.use(express.json());
-
-// Mock auth middleware
-const mockAuth = (req, res, next) => {
-  req.user = {
-    id: '00000000-0000-0000-0000-000000000000',
-    email: 'test@example.com',
-    isDemo: true,
-    subscription: {
-      plan: 'pro',
-      usage: { aiCreditsUsed: 0 },
-      limits: { aiCredits: 50 },
-      canUseAI: () => true
-    }
-  };
-  next();
-};
-
-// Import and use the router with mocked auth
-jest.mock('../src/middleware/auth', () => ({
-  authenticate: mockAuth,
-  checkSubscription: () => (req, res, next) => next()
-}));
-
-const aiRoutes = require('../src/routes/ai');
-app.use('/api/ai', aiRoutes);
 
 describe('AI Routes', () => {
+  let app;
+  let authToken;
+
+  beforeAll(async () => {
+    // Clear AI API keys to test unconfigured state
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.ANTHROPIC_API_KEY;
+
+    // Import models (this registers them with sequelize)
+    const { sequelize } = require('../src/models');
+
+    // Sync all models
+    await sequelize.sync({ force: true });
+
+    // Import app
+    const server = require('../src/index');
+    app = server.app;
+
+    // Create a test user
+    const registerRes = await request(app)
+      .post('/api/auth/register')
+      .send({
+        email: global.testUtils.generateTestEmail(),
+        password: 'SecurePass123!',
+        firstName: 'AI',
+        lastName: 'Tester'
+      });
+
+    authToken = registerRes.body.data.token;
+  });
+
   describe('POST /api/ai/generate-content', () => {
-    it('should generate demo content for Twitter', async () => {
+    it('should return 503 when AI service not configured', async () => {
+      const response = await request(app)
+        .post('/api/ai/generate-content')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          platform: 'twitter',
+          topic: 'coffee'
+        });
+
+      expect(response.status).toBe(503);
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toContain('AI service not configured');
+    });
+
+    it('should require authentication', async () => {
       const response = await request(app)
         .post('/api/ai/generate-content')
         .send({
@@ -47,141 +55,67 @@ describe('AI Routes', () => {
           topic: 'coffee'
         });
 
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.content).toBeDefined();
-      expect(response.body.data.content.toLowerCase()).toContain('coffee');
-      expect(response.body.data.creditsUsed).toBe(1);
-    });
-
-    it('should generate demo content for LinkedIn', async () => {
-      const response = await request(app)
-        .post('/api/ai/generate-content')
-        .send({
-          platform: 'linkedin',
-          topic: 'productivity'
-        });
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.content).toBeDefined();
-      expect(response.body.data.content.toLowerCase()).toContain('productivity');
-    });
-
-    it('should generate demo content for Instagram', async () => {
-      const response = await request(app)
-        .post('/api/ai/generate-content')
-        .send({
-          platform: 'instagram',
-          topic: 'fitness'
-        });
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.content).toContain('#');
-    });
-
-    it('should use prompt as topic if topic not provided', async () => {
-      const response = await request(app)
-        .post('/api/ai/generate-content')
-        .send({
-          prompt: 'Generate a post about technology'
-        });
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.content.toLowerCase()).toContain('technology');
-    });
-
-    it('should default to twitter platform if not specified', async () => {
-      const response = await request(app)
-        .post('/api/ai/generate-content')
-        .send({
-          topic: 'marketing'
-        });
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
+      expect(response.status).toBe(401);
     });
   });
 
   describe('POST /api/ai/improve-content', () => {
-    it('should improve existing content', async () => {
+    it('should return 503 when AI service not configured', async () => {
       const response = await request(app)
         .post('/api/ai/improve-content')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           content: 'Check out our new product',
           platform: 'twitter',
           improvementType: 'engaging'
         });
 
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.content).toBeDefined();
+      expect(response.status).toBe(503);
+      expect(response.body.error).toContain('AI service not configured');
     });
   });
 
   describe('POST /api/ai/generate-reply', () => {
-    it('should generate a friendly reply', async () => {
+    it('should return 503 when AI service not configured', async () => {
       const response = await request(app)
         .post('/api/ai/generate-reply')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           message: 'Great product!',
           tone: 'friendly'
         });
 
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.reply).toBeDefined();
+      expect(response.status).toBe(503);
+      expect(response.body.error).toContain('AI service not configured');
     });
+  });
 
-    it('should generate a professional reply', async () => {
+  describe('POST /api/ai/hashtag-suggestions', () => {
+    it('should return 503 when AI service not configured', async () => {
       const response = await request(app)
-        .post('/api/ai/generate-reply')
+        .post('/api/ai/hashtag-suggestions')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
-          message: 'Can you tell me more about your services?',
-          tone: 'professional'
+          content: 'Check out our new product launch',
+          platform: 'twitter'
         });
 
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.reply).toBeDefined();
+      expect(response.status).toBe(503);
+      expect(response.body.error).toContain('AI service not configured');
     });
   });
-});
 
-describe('Demo Response Generation', () => {
-  it('should include hashtags in response', async () => {
-    const response = await request(app)
-      .post('/api/ai/generate-content')
-      .send({
-        platform: 'twitter',
-        topic: 'artificial intelligence'
-      });
+  describe('POST /api/ai/analyze-sentiment', () => {
+    it('should return 503 when AI service not configured', async () => {
+      const response = await request(app)
+        .post('/api/ai/analyze-sentiment')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          texts: ['Great product!', 'This is terrible']
+        });
 
-    expect(response.body.data.content).toMatch(/#\w+/);
-  });
-
-  it('should handle multi-word topics', async () => {
-    const response = await request(app)
-      .post('/api/ai/generate-content')
-      .send({
-        platform: 'instagram',
-        topic: 'digital marketing strategies'
-      });
-
-    expect(response.status).toBe(200);
-    expect(response.body.data.content.toLowerCase()).toContain('digital marketing');
-  });
-
-  it('should extract topic from generate prompts', async () => {
-    const response = await request(app)
-      .post('/api/ai/generate-content')
-      .send({
-        prompt: 'Generate a social media post about sustainable living'
-      });
-
-    expect(response.status).toBe(200);
-    expect(response.body.data.content.toLowerCase()).toContain('sustainable');
+      // May return 503 for AI not configured or 403 for subscription required
+      expect([503, 403]).toContain(response.status);
+    });
   });
 });

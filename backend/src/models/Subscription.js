@@ -1,6 +1,9 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
+// Check if using PostgreSQL
+const isPostgres = sequelize.getDialect() === 'postgres';
+
 const Subscription = sequelize.define('Subscription', {
   id: {
     type: DataTypes.UUID,
@@ -51,27 +54,56 @@ const Subscription = sequelize.define('Subscription', {
     allowNull: true
   },
   limits: {
-    type: DataTypes.JSONB,
-    defaultValue: {
-      socialAccounts: 3,
-      postsPerMonth: 50,
-      aiCredits: 100,
-      teamMembers: 1,
-      scheduledPosts: 10
+    type: isPostgres ? DataTypes.JSONB : DataTypes.TEXT,
+    defaultValue: isPostgres
+      ? { socialAccounts: 3, postsPerMonth: 50, aiCredits: 100, teamMembers: 1, scheduledPosts: 10 }
+      : '{"socialAccounts":3,"postsPerMonth":50,"aiCredits":100,"teamMembers":1,"scheduledPosts":10}',
+    get() {
+      const value = this.getDataValue('limits');
+      if (isPostgres) return value || {};
+      return value ? JSON.parse(value) : {};
+    },
+    set(value) {
+      if (isPostgres) {
+        this.setDataValue('limits', value);
+      } else {
+        this.setDataValue('limits', JSON.stringify(value || {}));
+      }
     }
   },
   usage: {
-    type: DataTypes.JSONB,
-    defaultValue: {
-      socialAccounts: 0,
-      postsThisMonth: 0,
-      aiCreditsUsed: 0,
-      teamMembers: 1
+    type: isPostgres ? DataTypes.JSONB : DataTypes.TEXT,
+    defaultValue: isPostgres
+      ? { socialAccounts: 0, postsThisMonth: 0, aiCreditsUsed: 0, teamMembers: 1 }
+      : '{"socialAccounts":0,"postsThisMonth":0,"aiCreditsUsed":0,"teamMembers":1}',
+    get() {
+      const value = this.getDataValue('usage');
+      if (isPostgres) return value || {};
+      return value ? JSON.parse(value) : {};
+    },
+    set(value) {
+      if (isPostgres) {
+        this.setDataValue('usage', value);
+      } else {
+        this.setDataValue('usage', JSON.stringify(value || {}));
+      }
     }
   },
   metadata: {
-    type: DataTypes.JSONB,
-    defaultValue: {}
+    type: isPostgres ? DataTypes.JSONB : DataTypes.TEXT,
+    defaultValue: isPostgres ? {} : '{}',
+    get() {
+      const value = this.getDataValue('metadata');
+      if (isPostgres) return value || {};
+      return value ? JSON.parse(value) : {};
+    },
+    set(value) {
+      if (isPostgres) {
+        this.setDataValue('metadata', value);
+      } else {
+        this.setDataValue('metadata', JSON.stringify(value || {}));
+      }
+    }
   }
 }, {
   tableName: 'subscriptions'

@@ -10,54 +10,6 @@ router.get('/', authenticate, async (req, res, next) => {
   try {
     const { status, platform, page = 1, limit = 20 } = req.query;
 
-    // Demo mode: return mock posts
-    if (req.user.isDemo) {
-      const demoPosts = [
-        {
-          id: 'demo-post-1',
-          content: '🚀 Excited to announce our new product launch! Stay tuned for more updates. #Innovation #NewProduct',
-          contentType: 'text',
-          status: 'published',
-          publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-          socialAccount: { id: 'demo-twitter-1', platform: 'twitter', platformUsername: '@demo_brand' },
-          analytics: { likes: 124, comments: 18, shares: 32 }
-        },
-        {
-          id: 'demo-post-2',
-          content: 'Behind the scenes at our office! Great team, great vibes. 💼✨ #TeamWork #CompanyCulture',
-          contentType: 'image',
-          status: 'published',
-          publishedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-          createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(),
-          socialAccount: { id: 'demo-instagram-1', platform: 'instagram', platformUsername: 'demo.brand' },
-          analytics: { likes: 256, comments: 42, shares: 15 }
-        },
-        {
-          id: 'demo-post-3',
-          content: 'Thrilled to share insights from our latest industry report. Key takeaways inside!',
-          contentType: 'text',
-          status: 'scheduled',
-          scheduledAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-          createdAt: new Date().toISOString(),
-          socialAccount: { id: 'demo-linkedin-1', platform: 'linkedin', platformUsername: 'Demo Brand Company' },
-          analytics: null
-        }
-      ];
-
-      return res.json({
-        success: true,
-        data: {
-          posts: demoPosts,
-          pagination: {
-            total: demoPosts.length,
-            page: parseInt(page),
-            pages: 1
-          }
-        }
-      });
-    }
-
     const where = { userId: req.user.id };
     if (status) where.status = status;
 
@@ -100,6 +52,11 @@ router.post('/', authenticate, async (req, res, next) => {
   try {
     const { socialAccountId, content, contentType, mediaUrls, scheduledAt, hashtags, mentions } = req.body;
 
+    // Validate content is provided
+    if (!content) {
+      throw new AppError('Content is required', 400);
+    }
+
     // Verify account belongs to user
     const account = await SocialAccount.findOne({
       where: { id: socialAccountId, userId: req.user.id, isActive: true }
@@ -111,7 +68,7 @@ router.post('/', authenticate, async (req, res, next) => {
 
     // Check subscription limits
     const subscription = req.user.subscription;
-    if (!subscription.canCreatePost()) {
+    if (subscription && typeof subscription.canCreatePost === 'function' && !subscription.canCreatePost()) {
       throw new AppError('Post limit reached. Please upgrade your plan.', 403);
     }
 
@@ -129,11 +86,13 @@ router.post('/', authenticate, async (req, res, next) => {
       status
     });
 
-    // Update usage
-    await Subscription.update(
-      { 'usage.postsThisMonth': subscription.usage.postsThisMonth + 1 },
-      { where: { userId: req.user.id } }
-    );
+    // Update usage if subscription exists
+    if (subscription) {
+      await Subscription.update(
+        { 'usage.postsThisMonth': (subscription.usage?.postsThisMonth || 0) + 1 },
+        { where: { userId: req.user.id } }
+      );
+    }
 
     // If scheduled, add to queue
     if (scheduledAt) {
@@ -184,7 +143,9 @@ router.post('/:id/publish', authenticate, async (req, res, next) => {
 
       // Emit real-time notification
       const io = req.app.get('io');
-      io.to(`user:${req.user.id}`).emit('post:published', { postId: post.id });
+      if (io) {
+        io.to(`user:${req.user.id}`).emit('post:published', { postId: post.id });
+      }
 
       res.json({
         success: true,
@@ -206,25 +167,6 @@ router.post('/:id/publish', authenticate, async (req, res, next) => {
 // PUT /api/posts/:id - Update post
 router.put('/:id', authenticate, async (req, res, next) => {
   try {
-    // Demo mode: simulate update
-    if (req.user.isDemo) {
-      const { content, contentType, mediaUrls, scheduledAt, hashtags, mentions, status } = req.body;
-      return res.json({
-        success: true,
-        message: 'Post updated successfully',
-        data: {
-          post: {
-            id: req.params.id,
-            content: content || 'Demo post content',
-            contentType: contentType || 'text',
-            status: status || (scheduledAt ? 'scheduled' : 'draft'),
-            scheduledAt: scheduledAt || null,
-            updatedAt: new Date().toISOString()
-          }
-        }
-      });
-    }
-
     const post = await Post.findOne({
       where: { id: req.params.id, userId: req.user.id }
     });
@@ -260,14 +202,6 @@ router.put('/:id', authenticate, async (req, res, next) => {
 // DELETE /api/posts/:id - Delete post
 router.delete('/:id', authenticate, async (req, res, next) => {
   try {
-    // Demo mode: simulate delete
-    if (req.user.isDemo) {
-      return res.json({
-        success: true,
-        message: 'Post deleted successfully'
-      });
-    }
-
     const post = await Post.findOne({
       where: { id: req.params.id, userId: req.user.id }
     });

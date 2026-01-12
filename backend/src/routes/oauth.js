@@ -18,6 +18,10 @@ const buildOAuthUrl = (platform, state) => {
                    process.env.GOOGLE_CLIENT_ID || // For YouTube
                    process.env.FACEBOOK_APP_ID;    // For Instagram
 
+  if (!clientId) {
+    throw new AppError(`OAuth not configured for ${platform}. Please set ${platform.toUpperCase()}_CLIENT_ID.`, 503);
+  }
+
   const redirectUri = process.env[`${platform.toUpperCase()}_REDIRECT_URI`] ||
                       `${process.env.API_URL}/api/oauth/${platform}/callback`;
 
@@ -38,91 +42,6 @@ const buildOAuthUrl = (platform, state) => {
 router.get('/:platform/url', authenticate, async (req, res, next) => {
   try {
     const { platform } = req.params;
-
-    // Demo mode: simulate successful connection by adding a new demo account
-    if (req.user.isDemo) {
-      const demoAccounts = {
-        twitter: {
-          id: `demo-twitter-${Date.now()}`,
-          platform: 'twitter',
-          platformUsername: '@new_twitter_account',
-          platformDisplayName: 'New Twitter Account',
-          profilePicture: null,
-          isActive: true,
-          lastSyncAt: new Date().toISOString(),
-          createdAt: new Date().toISOString()
-        },
-        instagram: {
-          id: `demo-instagram-${Date.now()}`,
-          platform: 'instagram',
-          platformUsername: 'new.instagram',
-          platformDisplayName: 'New Instagram Account',
-          profilePicture: null,
-          isActive: true,
-          lastSyncAt: new Date().toISOString(),
-          createdAt: new Date().toISOString()
-        },
-        linkedin: {
-          id: `demo-linkedin-${Date.now()}`,
-          platform: 'linkedin',
-          platformUsername: 'New LinkedIn Profile',
-          platformDisplayName: 'New LinkedIn Profile',
-          profilePicture: null,
-          isActive: true,
-          lastSyncAt: new Date().toISOString(),
-          createdAt: new Date().toISOString()
-        },
-        youtube: {
-          id: `demo-youtube-${Date.now()}`,
-          platform: 'youtube',
-          platformUsername: '@new_youtube_channel',
-          platformDisplayName: 'New YouTube Channel',
-          profilePicture: null,
-          isActive: true,
-          lastSyncAt: new Date().toISOString(),
-          createdAt: new Date().toISOString()
-        },
-        github: {
-          id: `demo-github-${Date.now()}`,
-          platform: 'github',
-          platformUsername: 'new-github-user',
-          platformDisplayName: 'New GitHub User',
-          profilePicture: null,
-          isActive: true,
-          lastSyncAt: new Date().toISOString(),
-          createdAt: new Date().toISOString()
-        },
-        whatsapp: {
-          id: `demo-whatsapp-${Date.now()}`,
-          platform: 'whatsapp',
-          platformUsername: '+1 555-123-4567',
-          platformDisplayName: 'Business WhatsApp',
-          profilePicture: null,
-          isActive: true,
-          lastSyncAt: new Date().toISOString(),
-          createdAt: new Date().toISOString()
-        },
-        telegram: {
-          id: `demo-telegram-${Date.now()}`,
-          platform: 'telegram',
-          platformUsername: '@new_telegram_channel',
-          platformDisplayName: 'New Telegram Channel',
-          profilePicture: null,
-          isActive: true,
-          lastSyncAt: new Date().toISOString(),
-          createdAt: new Date().toISOString()
-        }
-      };
-
-      return res.json({
-        success: true,
-        message: `Demo account connected for ${platform}`,
-        data: {
-          account: demoAccounts[platform] || demoAccounts.twitter,
-          isDemoConnection: true
-        }
-      });
-    }
 
     // Generate state token with user ID
     const state = Buffer.from(JSON.stringify({
@@ -146,18 +65,9 @@ router.get('/:platform/connect', authenticate, async (req, res, next) => {
   try {
     const { platform } = req.params;
 
-    // Demo mode: same as /url endpoint
-    if (req.user.isDemo) {
-      return res.json({
-        success: true,
-        message: `Demo mode - ${platform} account connected`,
-        data: { isDemoConnection: true }
-      });
-    }
-
     // Check subscription limits
     const subscription = req.user.subscription;
-    if (subscription && !subscription.canAddSocialAccount()) {
+    if (subscription && typeof subscription.canAddSocialAccount === 'function' && !subscription.canAddSocialAccount()) {
       throw new AppError('Social account limit reached. Please upgrade your plan.', 403);
     }
 

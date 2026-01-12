@@ -2,6 +2,9 @@ const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 const bcrypt = require('bcryptjs');
 
+// Check if using PostgreSQL
+const isPostgres = sequelize.getDialect() === 'postgres';
+
 const User = sequelize.define('User', {
   id: {
     type: DataTypes.UUID,
@@ -49,15 +52,21 @@ const User = sequelize.define('User', {
     allowNull: true
   },
   settings: {
-    type: DataTypes.JSONB,
-    defaultValue: {
-      notifications: {
-        email: true,
-        push: true,
-        sms: false
-      },
-      timezone: 'UTC',
-      language: 'en'
+    type: isPostgres ? DataTypes.JSONB : DataTypes.TEXT,
+    defaultValue: isPostgres
+      ? { notifications: { email: true, push: true, sms: false }, timezone: 'UTC', language: 'en' }
+      : '{"notifications":{"email":true,"push":true,"sms":false},"timezone":"UTC","language":"en"}',
+    get() {
+      const value = this.getDataValue('settings');
+      if (isPostgres) return value || {};
+      return value ? JSON.parse(value) : {};
+    },
+    set(value) {
+      if (isPostgres) {
+        this.setDataValue('settings', value);
+      } else {
+        this.setDataValue('settings', JSON.stringify(value || {}));
+      }
     }
   }
 }, {

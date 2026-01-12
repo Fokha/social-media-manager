@@ -2,6 +2,9 @@ const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 const { encrypt, decrypt } = require('../utils/encryption');
 
+// Check if using PostgreSQL
+const isPostgres = sequelize.getDialect() === 'postgres';
+
 const SocialAccount = sequelize.define('SocialAccount', {
   id: {
     type: DataTypes.UUID,
@@ -73,8 +76,20 @@ const SocialAccount = sequelize.define('SocialAccount', {
     allowNull: true
   },
   scopes: {
-    type: DataTypes.ARRAY(DataTypes.STRING),
-    defaultValue: []
+    type: isPostgres ? DataTypes.ARRAY(DataTypes.STRING) : DataTypes.TEXT,
+    defaultValue: isPostgres ? [] : '[]',
+    get() {
+      const value = this.getDataValue('scopes');
+      if (isPostgres) return value || [];
+      return value ? JSON.parse(value) : [];
+    },
+    set(value) {
+      if (isPostgres) {
+        this.setDataValue('scopes', value);
+      } else {
+        this.setDataValue('scopes', JSON.stringify(value || []));
+      }
+    }
   },
   isActive: {
     type: DataTypes.BOOLEAN,
@@ -85,8 +100,20 @@ const SocialAccount = sequelize.define('SocialAccount', {
     allowNull: true
   },
   metadata: {
-    type: DataTypes.JSONB,
-    defaultValue: {}
+    type: isPostgres ? DataTypes.JSONB : DataTypes.TEXT,
+    defaultValue: isPostgres ? {} : '{}',
+    get() {
+      const value = this.getDataValue('metadata');
+      if (isPostgres) return value || {};
+      return value ? JSON.parse(value) : {};
+    },
+    set(value) {
+      if (isPostgres) {
+        this.setDataValue('metadata', value);
+      } else {
+        this.setDataValue('metadata', JSON.stringify(value || {}));
+      }
+    }
   }
 }, {
   tableName: 'social_accounts',

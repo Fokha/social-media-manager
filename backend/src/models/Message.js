@@ -1,6 +1,9 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
+// Check if using PostgreSQL
+const isPostgres = sequelize.getDialect() === 'postgres';
+
 const Message = sequelize.define('Message', {
   id: {
     type: DataTypes.UUID,
@@ -84,8 +87,20 @@ const Message = sequelize.define('Message', {
     allowNull: true
   },
   metadata: {
-    type: DataTypes.JSONB,
-    defaultValue: {}
+    type: isPostgres ? DataTypes.JSONB : DataTypes.TEXT,
+    defaultValue: isPostgres ? {} : '{}',
+    get() {
+      const value = this.getDataValue('metadata');
+      if (isPostgres) return value || {};
+      return value ? JSON.parse(value) : {};
+    },
+    set(value) {
+      if (isPostgres) {
+        this.setDataValue('metadata', value);
+      } else {
+        this.setDataValue('metadata', JSON.stringify(value || {}));
+      }
+    }
   }
 }, {
   tableName: 'messages',

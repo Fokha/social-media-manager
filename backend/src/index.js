@@ -10,6 +10,8 @@ const { Server } = require('socket.io');
 const logger = require('./utils/logger');
 const { connectDB } = require('./config/database');
 const { connectRedis } = require('./config/redis');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -18,6 +20,7 @@ const accountRoutes = require('./routes/accounts');
 const postRoutes = require('./routes/posts');
 const messageRoutes = require('./routes/messages');
 const subscriptionRoutes = require('./routes/subscriptions');
+const notificationRoutes = require('./routes/notifications');
 const aiRoutes = require('./routes/ai');
 const webhookRoutes = require('./routes/webhooks');
 const adminRoutes = require('./routes/admin');
@@ -79,6 +82,18 @@ app.get('/health', (req, res) => {
   });
 });
 
+// API Documentation (Swagger UI)
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Social Media Manager API'
+}));
+
+// Swagger JSON endpoint
+app.get('/api-docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/oauth', oauthRoutes);
@@ -86,6 +101,7 @@ app.use('/api/accounts', accountRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/admin', adminRoutes);
@@ -114,32 +130,21 @@ app.use((req, res) => {
 
 // Start server
 const PORT = process.env.PORT || 3000;
-const DEMO_MODE = process.env.DEMO_MODE === 'true' || !process.env.DATABASE_URL;
 
 const startServer = async () => {
   try {
-    if (DEMO_MODE) {
-      logger.info('Starting in DEMO MODE - database connections disabled');
-    } else {
-      // Connect to databases
-      await connectDB();
-      await connectRedis();
-    }
+    // Connect to databases (required)
+    await connectDB();
+    await connectRedis();
 
     // Start listening
     server.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}`);
       logger.info(`Environment: ${process.env.NODE_ENV}`);
-      if (DEMO_MODE) {
-        logger.info('Running in DEMO MODE - all features work with mock data');
-      }
     });
   } catch (error) {
-    logger.error('Database connection failed, starting in DEMO MODE:', error.message);
-    // Start anyway in demo mode
-    server.listen(PORT, () => {
-      logger.info(`Server running on port ${PORT} (DEMO MODE)`);
-    });
+    logger.error('Failed to start server:', error.message);
+    process.exit(1);
   }
 };
 
@@ -152,6 +157,9 @@ process.on('SIGTERM', () => {
   });
 });
 
-startServer();
+// Only start server if not in test mode
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
+}
 
-module.exports = { app, io };
+module.exports = { app, io, startServer };

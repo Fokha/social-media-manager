@@ -6,7 +6,7 @@ const { Subscription, User } = require('../models');
 const { AppError } = require('../middleware/errorHandler');
 const logger = require('../utils/logger');
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 
 // Price IDs for each plan
 const PLAN_PRICES = {
@@ -113,6 +113,10 @@ router.post('/create-checkout', authenticate, async (req, res, next) => {
   try {
     const { plan } = req.body;
 
+    if (!stripe) {
+      throw new AppError('Payment processing is not configured. Please set STRIPE_SECRET_KEY.', 503);
+    }
+
     if (!PLAN_PRICES[plan]) {
       throw new AppError('Invalid plan selected', 400);
     }
@@ -131,7 +135,9 @@ router.post('/create-checkout', authenticate, async (req, res, next) => {
       });
       customerId = customer.id;
 
-      await subscription.update({ stripeCustomerId: customerId });
+      if (subscription) {
+        await subscription.update({ stripeCustomerId: customerId });
+      }
     }
 
     // Create checkout session
@@ -163,6 +169,10 @@ router.post('/create-checkout', authenticate, async (req, res, next) => {
 // POST /api/subscriptions/create-portal - Create customer portal session
 router.post('/create-portal', authenticate, async (req, res, next) => {
   try {
+    if (!stripe) {
+      throw new AppError('Payment processing is not configured', 503);
+    }
+
     const subscription = await Subscription.findOne({
       where: { userId: req.user.id }
     });
@@ -188,6 +198,10 @@ router.post('/create-portal', authenticate, async (req, res, next) => {
 // POST /api/subscriptions/cancel - Cancel subscription
 router.post('/cancel', authenticate, async (req, res, next) => {
   try {
+    if (!stripe) {
+      throw new AppError('Payment processing is not configured', 503);
+    }
+
     const subscription = await Subscription.findOne({
       where: { userId: req.user.id }
     });
@@ -215,6 +229,10 @@ router.post('/cancel', authenticate, async (req, res, next) => {
 // POST /api/subscriptions/resume - Resume canceled subscription
 router.post('/resume', authenticate, async (req, res, next) => {
   try {
+    if (!stripe) {
+      throw new AppError('Payment processing is not configured', 503);
+    }
+
     const subscription = await Subscription.findOne({
       where: { userId: req.user.id }
     });
@@ -241,6 +259,13 @@ router.post('/resume', authenticate, async (req, res, next) => {
 // GET /api/subscriptions/invoices - Get invoice history
 router.get('/invoices', authenticate, async (req, res, next) => {
   try {
+    if (!stripe) {
+      return res.json({
+        success: true,
+        data: { invoices: [] }
+      });
+    }
+
     const subscription = await Subscription.findOne({
       where: { userId: req.user.id }
     });
@@ -278,26 +303,6 @@ router.get('/invoices', authenticate, async (req, res, next) => {
 // GET /api/subscriptions/usage - Get current usage
 router.get('/usage', authenticate, async (req, res, next) => {
   try {
-    // Demo mode - return mock subscription data
-    if (req.user.isDemo) {
-      return res.json({
-        success: true,
-        data: {
-          usage: {
-            accounts: 3,
-            postsThisMonth: 15,
-            aiCreditsUsed: 12
-          },
-          limits: {
-            accounts: 10,
-            postsPerMonth: 100,
-            aiCredits: 50
-          },
-          plan: 'pro'
-        }
-      });
-    }
-
     const subscription = await Subscription.findOne({
       where: { userId: req.user.id }
     });

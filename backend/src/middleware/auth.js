@@ -7,28 +7,11 @@ const authenticate = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     const token = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
 
-    // Demo mode: If no token, empty token, or demo-token provided, use demo user
-    if (!token || token === 'demo-token' || token === 'null' || token === 'undefined') {
-      // Create a demo user object with mock subscription
-      // Using a valid UUID format for demo user
-      req.user = {
-        id: '00000000-0000-0000-0000-000000000000',
-        email: 'demo@socialmanager.com',
-        name: 'Demo User',
-        firstName: 'Demo',
-        lastName: 'User',
-        role: 'admin',
-        isActive: true,
-        isDemo: true, // Flag to identify demo user
-        subscription: {
-          plan: 'pro',
-          usage: { aiCreditsUsed: 0, accounts: 0, postsThisMonth: 0 },
-          limits: { aiCredits: 50, accounts: 10, postsPerMonth: 100 },
-          canUseAI: () => true
-        }
-      };
-      return next();
+    if (!token) {
+      throw new AppError('Authentication required', 401);
     }
+
+    // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const user = await User.findByPk(decoded.id, {

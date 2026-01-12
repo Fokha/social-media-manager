@@ -7,47 +7,6 @@ const { AppError } = require('../middleware/errorHandler');
 // GET /api/accounts - List all connected accounts
 router.get('/', authenticate, async (req, res, next) => {
   try {
-    // Demo mode: return mock accounts
-    if (req.user.isDemo) {
-      return res.json({
-        success: true,
-        data: {
-          accounts: [
-            {
-              id: 'demo-twitter-1',
-              platform: 'twitter',
-              platformUsername: '@demo_brand',
-              platformDisplayName: 'Demo Brand',
-              profilePicture: null,
-              isActive: true,
-              lastSyncAt: new Date().toISOString(),
-              createdAt: new Date().toISOString()
-            },
-            {
-              id: 'demo-instagram-1',
-              platform: 'instagram',
-              platformUsername: 'demo.brand',
-              platformDisplayName: 'Demo Brand Official',
-              profilePicture: null,
-              isActive: true,
-              lastSyncAt: new Date().toISOString(),
-              createdAt: new Date().toISOString()
-            },
-            {
-              id: 'demo-linkedin-1',
-              platform: 'linkedin',
-              platformUsername: 'Demo Brand Company',
-              platformDisplayName: 'Demo Brand',
-              profilePicture: null,
-              isActive: true,
-              lastSyncAt: new Date().toISOString(),
-              createdAt: new Date().toISOString()
-            }
-          ]
-        }
-      });
-    }
-
     const accounts = await SocialAccount.findAll({
       where: { userId: req.user.id, isActive: true },
       attributes: [
@@ -89,15 +48,6 @@ router.get('/:id', authenticate, async (req, res, next) => {
 // PUT /api/accounts/:id - Update account settings
 router.put('/:id', authenticate, async (req, res, next) => {
   try {
-    // Demo mode: simulate update
-    if (req.user.isDemo) {
-      return res.json({
-        success: true,
-        message: 'Account updated successfully',
-        data: { ...req.body, id: req.params.id }
-      });
-    }
-
     const account = await SocialAccount.findOne({
       where: { id: req.params.id, userId: req.user.id }
     });
@@ -126,14 +76,6 @@ router.put('/:id', authenticate, async (req, res, next) => {
 // DELETE /api/accounts/:id - Disconnect account
 router.delete('/:id', authenticate, async (req, res, next) => {
   try {
-    // Demo mode: simulate disconnect
-    if (req.user.isDemo) {
-      return res.json({
-        success: true,
-        message: 'Account disconnected successfully'
-      });
-    }
-
     const account = await SocialAccount.findOne({
       where: { id: req.params.id, userId: req.user.id }
     });
@@ -143,9 +85,6 @@ router.delete('/:id', authenticate, async (req, res, next) => {
     }
 
     await account.update({ isActive: false });
-
-    // Optionally delete the account completely
-    // await account.destroy();
 
     res.json({
       success: true,
@@ -168,7 +107,6 @@ router.post('/:id/refresh', authenticate, async (req, res, next) => {
     }
 
     // Token refresh logic varies by platform
-    // This would call the appropriate platform service
     const PlatformService = require(`../services/platforms/${account.platform}`);
     const service = new PlatformService(account);
 

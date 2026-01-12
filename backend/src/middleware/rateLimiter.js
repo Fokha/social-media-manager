@@ -1,6 +1,9 @@
 const rateLimit = require('express-rate-limit');
 const { getRedisClient } = require('../config/redis');
 
+// Skip rate limiting in test environment
+const skipInTest = process.env.NODE_ENV === 'test';
+
 // Basic rate limiter
 const rateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -10,7 +13,8 @@ const rateLimiter = rateLimit({
     error: 'Too many requests, please try again later'
   },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  skip: () => skipInTest
 });
 
 // Stricter limiter for auth endpoints
@@ -20,7 +24,8 @@ const authLimiter = rateLimit({
   message: {
     success: false,
     error: 'Too many login attempts, please try again later'
-  }
+  },
+  skip: () => skipInTest
 });
 
 // API rate limiter for external API calls
@@ -30,7 +35,8 @@ const apiLimiter = rateLimit({
   message: {
     success: false,
     error: 'API rate limit exceeded'
-  }
+  },
+  skip: () => skipInTest
 });
 
 module.exports = { rateLimiter, authLimiter, apiLimiter };
