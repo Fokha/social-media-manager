@@ -2,6 +2,52 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0] - 2026-01-12
+
+### Removed
+- **Demo Mode Completely Removed**
+  - All `isDemoMode()` checks and demo user fallbacks removed
+  - All hardcoded mock/placeholder data removed from routes
+  - No more demo authentication bypass
+  - AI endpoints now require real API keys (OPENAI_API_KEY or ANTHROPIC_API_KEY)
+  - OAuth endpoints now require real platform credentials
+
+### Changed
+- **Real Database Integration**
+  - All routes now use real Sequelize database queries
+  - SQLite support for development (zero configuration)
+  - PostgreSQL for production deployments
+  - Authentication requires valid JWT tokens
+  - Subscriptions created automatically on user registration
+
+### Added
+- **Production Infrastructure**
+  - Docker Compose configurations (dev and prod)
+  - Nginx reverse proxy configuration
+  - CI/CD workflows for GitHub Actions
+  - Database migrations for all models
+  - Deployment script (`scripts/deploy.sh`)
+
+- **New Services**
+  - Push notification service with Firebase/APNS support
+  - OAuth token refresh service
+  - Monitoring configuration
+  - Swagger API documentation setup
+
+- **Testing**
+  - Comprehensive API tests using Jest + Supertest
+  - In-memory SQLite for test isolation
+  - 40 tests covering auth, posts, accounts, and AI routes
+  - Jest configuration with sequential test execution
+
+### Technical Details
+- Rate limiting skipped in test environment
+- Soft delete pattern for social accounts
+- All models properly registered before database sync
+- ENCRYPTION_KEY validation (32+ characters)
+
+---
+
 ## [1.1.0] - 2026-01-12
 
 ### Added
@@ -99,18 +145,19 @@ All notable changes to this project will be documented in this file.
 
 ## Development Notes
 
-### Running in Demo Mode
-The app runs in demo mode when:
-- No authentication token is provided
-- No OpenAI/Anthropic API keys are configured
+### Database Configuration
+The backend supports both SQLite (development) and PostgreSQL (production):
+- **SQLite**: Works out of the box, data stored in `backend/data/database.sqlite`
+- **PostgreSQL**: Set `DATABASE_URL` environment variable
 
-Demo mode features:
-- Pro subscription with full features
-- Mock AI responses for content generation
-- All UI features functional
+### Running Tests
+```bash
+cd backend
+npm test
+```
 
 ### Adding API Keys
-To enable real AI generation:
+To enable AI features:
 1. Get API keys from OpenAI or Anthropic
 2. Add to `backend/.env`:
    ```

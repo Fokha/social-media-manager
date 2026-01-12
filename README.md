@@ -167,12 +167,19 @@ docker-compose up -d
 - `GET /api/subscriptions/usage` - Get usage stats
 - `POST /api/subscriptions/upgrade` - Upgrade plan
 
-## Demo Mode
+## Database Options
 
-The app runs in demo mode when no authentication token is provided:
-- Demo user with Pro subscription
-- AI features return mock responses (when no API keys configured)
-- All features functional for testing
+The backend supports two database configurations:
+
+### SQLite (Development/Testing)
+- Zero configuration - works out of the box
+- File-based storage at `backend/data/database.sqlite`
+- Ideal for local development and testing
+
+### PostgreSQL (Production)
+- Set `DATABASE_URL` environment variable
+- Recommended for production deployments
+- Full support for migrations via Sequelize
 
 ## Documentation
 

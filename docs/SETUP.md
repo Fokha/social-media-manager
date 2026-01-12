@@ -62,20 +62,25 @@ nano .env
 
 **Required .env variables:**
 ```env
-# Database
-DATABASE_URL=postgresql://user:password@localhost:5432/social_media_manager
+# Database (PostgreSQL - optional, SQLite used by default)
+# DATABASE_URL=postgresql://user:password@localhost:5432/social_media_manager
 
-# Redis
+# Redis (optional - graceful fallback if not available)
 REDIS_URL=redis://localhost:6379
 
 # JWT
 JWT_SECRET=your-super-secret-key-min-32-chars
 JWT_EXPIRES_IN=7d
 
+# Encryption (must be exactly 32 characters)
+ENCRYPTION_KEY=your-32-character-encryption-key
+
 # Server
 PORT=3000
 NODE_ENV=development
 ```
+
+**Note:** The backend works out of the box with SQLite. No database configuration needed for development.
 
 **Start the backend:**
 ```bash
@@ -242,7 +247,21 @@ git push heroku main
 
 ## Database Setup
 
-### PostgreSQL Configuration
+### SQLite (Default - Development)
+
+SQLite is used by default and requires no configuration:
+- Database file: `backend/data/database.sqlite`
+- Tables created automatically on first run
+- Ideal for local development and testing
+
+### PostgreSQL (Production)
+
+For production, use PostgreSQL by setting `DATABASE_URL`:
+
+```bash
+# Set environment variable
+export DATABASE_URL=postgresql://user:password@localhost:5432/social_media_manager
+```
 
 ```sql
 -- Create user (if needed)
@@ -255,7 +274,15 @@ CREATE DATABASE social_media_manager OWNER social_manager;
 GRANT ALL PRIVILEGES ON DATABASE social_media_manager TO social_manager;
 ```
 
-### Schema Migration
+### Database Migrations
+
+Run migrations for production deployments:
+```bash
+cd backend
+npx sequelize-cli db:migrate
+```
+
+### Schema
 
 Tables are automatically created by Sequelize ORM when the server starts. The following tables are created:
 
