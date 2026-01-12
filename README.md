@@ -1,5 +1,10 @@
 # Social Media Manager
 
+[![CI](https://github.com/Fokha/social-media-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/Fokha/social-media-manager/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
+[![Flutter](https://img.shields.io/badge/Flutter-3.x-blue.svg)](https://flutter.dev/)
+
 A comprehensive social media management platform with a Flutter frontend and Node.js backend.
 
 ## Features
@@ -169,13 +174,46 @@ The app runs in demo mode when no authentication token is provided:
 - AI features return mock responses (when no API keys configured)
 - All features functional for testing
 
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Setup Guide](docs/SETUP.md) | Complete installation and configuration |
+| [API Documentation](docs/API.md) | Full API reference |
+| [Architecture](docs/ARCHITECTURE.md) | System design and structure |
+| [Features Guide](docs/FEATURES.md) | Detailed feature documentation |
+| [Contributing](docs/CONTRIBUTING.md) | How to contribute |
+| [Security](docs/SECURITY.md) | Security policy and practices |
+| [Audit Report](docs/AUDIT_REPORT.md) | Code quality and security audit |
+| [Changelog](CHANGELOG.md) | Version history |
+
 ## Contributing
 
+Please read our [Contributing Guide](docs/CONTRIBUTING.md) for details on:
+- Code of conduct
+- Development workflow
+- Code style guidelines
+- Pull request process
+
+Quick start:
 1. Fork the repository
-2. Create a feature branch
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
-4. Submit a pull request
+4. Run tests (`npm test` / `flutter test`)
+5. Commit (`git commit -m 'feat: add amazing feature'`)
+6. Push (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
+
+## Security
+
+See [SECURITY.md](docs/SECURITY.md) for reporting vulnerabilities.
 
 ## License
 
-MIT License - see LICENSE file for details.
+MIT License - see [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- Built with [Flutter](https://flutter.dev/) and [Node.js](https://nodejs.org/)
+- AI powered by [OpenAI](https://openai.com/) and [Anthropic](https://anthropic.com/)
+- Icons by [Iconsax](https://iconsax.io/)
