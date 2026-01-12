@@ -57,6 +57,17 @@ final appRouter = GoRouter(
           path: '/posts/create',
           builder: (context, state) => const CreatePostPage(),
         ),
+        GoRoute(
+          path: '/posts/edit/:id',
+          builder: (context, state) {
+            final postId = state.pathParameters['id']!;
+            final postData = state.extra as Map<String, dynamic>?;
+            return CreatePostPage(
+              postId: postId,
+              initialData: postData,
+            );
+          },
+        ),
 
         // Messages
         GoRoute(

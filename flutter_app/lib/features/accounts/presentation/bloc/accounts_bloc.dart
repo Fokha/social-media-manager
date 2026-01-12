@@ -137,10 +137,43 @@ class AccountsBloc extends Bloc<AccountsEvent, AccountsState> {
     emit(state.copyWith(connectingPlatform: event.platform, error: null));
 
     try {
-      await _apiService.getOAuthUrl(event.platform);
-      // In a real app, this would open the OAuth URL in a browser
-      // and handle the callback. For now, we'll just clear the connecting state.
+      final response = await _apiService.getOAuthUrl(event.platform);
+      final data = response.data['data'] as Map<String, dynamic>?;
+
+      // Check if this is a demo connection (account returned directly)
+      if (data != null && data['isDemoConnection'] == true) {
+        final newAccount = data['account'] as Map<String, dynamic>?;
+        if (newAccount != null) {
+          // Check if account already exists (by platform)
+          final existingIndex = state.accounts.indexWhere(
+            (a) => a['platform'] == newAccount['platform'],
+          );
+
+          List<Map<String, dynamic>> updatedAccounts;
+          if (existingIndex >= 0) {
+            // Already connected - just show message
+            emit(state.copyWith(
+              connectingPlatform: null,
+              error: '${event.platform} account is already connected',
+            ));
+            return;
+          } else {
+            // Add new account
+            updatedAccounts = [...state.accounts, newAccount];
+          }
+
+          emit(state.copyWith(
+            connectingPlatform: null,
+            accounts: updatedAccounts,
+          ));
+          return;
+        }
+      }
+
+      // Real OAuth flow - would open browser
+      // For now, just clear the connecting state and refresh accounts
       emit(state.copyWith(connectingPlatform: null));
+      add(RefreshAccounts());
     } catch (e) {
       emit(state.copyWith(
         connectingPlatform: null,

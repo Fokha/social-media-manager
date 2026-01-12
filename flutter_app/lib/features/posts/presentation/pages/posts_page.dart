@@ -244,7 +244,10 @@ class _PostListItem extends StatelessWidget {
         onDelete();
         return false;
       },
-      child: PostCard(post: post),
+      child: PostCard(
+        post: post,
+        onDelete: onDelete,
+      ),
     );
   }
 }

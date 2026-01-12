@@ -12,7 +12,16 @@ import '../../../accounts/presentation/bloc/accounts_bloc.dart';
 import '../bloc/posts_bloc.dart';
 
 class CreatePostPage extends StatefulWidget {
-  const CreatePostPage({super.key});
+  final String? postId;
+  final Map<String, dynamic>? initialData;
+
+  const CreatePostPage({
+    super.key,
+    this.postId,
+    this.initialData,
+  });
+
+  bool get isEditing => postId != null;
 
   @override
   State<CreatePostPage> createState() => _CreatePostPageState();
@@ -33,6 +42,24 @@ class _CreatePostPageState extends State<CreatePostPage> {
   DateTime? _loopEndDate;
 
   @override
+  void initState() {
+    super.initState();
+    // Pre-fill form when editing
+    if (widget.isEditing && widget.initialData != null) {
+      _contentController.text = widget.initialData!['content'] as String? ?? '';
+      final scheduledAt = widget.initialData!['scheduledAt'];
+      if (scheduledAt != null) {
+        _scheduledAt = DateTime.tryParse(scheduledAt.toString());
+      }
+      // Pre-select the platform if available
+      final socialAccount = widget.initialData!['socialAccount'] as Map<String, dynamic>?;
+      if (socialAccount != null) {
+        _selectedPlatforms.add(socialAccount['id'] as String);
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _contentController.dispose();
     _aiPromptController.dispose();
@@ -48,12 +75,13 @@ class _CreatePostPageState extends State<CreatePostPage> {
       ],
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Create Post'),
+          title: Text(widget.isEditing ? 'Edit Post' : 'Create Post'),
           actions: [
-            TextButton(
-              onPressed: () => _saveDraft(context),
-              child: const Text('Save Draft'),
-            ),
+            if (!widget.isEditing)
+              TextButton(
+                onPressed: () => _saveDraft(context),
+                child: const Text('Save Draft'),
+              ),
           ],
         ),
         body: BlocConsumer<PostsBloc, PostsState>(
@@ -868,6 +896,12 @@ class _CreatePostPageState extends State<CreatePostPage> {
   }
 
   String _getPublishButtonText() {
+    if (widget.isEditing) {
+      if (_scheduledAt == null) {
+        return 'Update & Publish';
+      }
+      return 'Update Post';
+    }
     if (_scheduledAt == null) {
       return 'Publish Now';
     }
@@ -1110,12 +1144,27 @@ class _CreatePostPageState extends State<CreatePostPage> {
       return;
     }
 
-    context.read<PostsBloc>().add(
-          CreatePost(
-            content: _contentController.text,
-            platforms: _selectedPlatforms.toList(),
-            scheduledAt: _scheduledAt,
-          ),
-        );
+    if (widget.isEditing) {
+      // Update existing post
+      context.read<PostsBloc>().add(
+            UpdatePost(
+              widget.postId!,
+              {
+                'content': _contentController.text,
+                'scheduledAt': _scheduledAt?.toIso8601String(),
+                'status': _scheduledAt != null ? 'scheduled' : 'published',
+              },
+            ),
+          );
+    } else {
+      // Create new post
+      context.read<PostsBloc>().add(
+            CreatePost(
+              content: _contentController.text,
+              platforms: _selectedPlatforms.toList(),
+              scheduledAt: _scheduledAt,
+            ),
+          );
+    }
   }
 }

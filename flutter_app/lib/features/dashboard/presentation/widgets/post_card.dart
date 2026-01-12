@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
 
@@ -6,8 +7,15 @@ import '../../../../core/theme/app_colors.dart';
 
 class PostCard extends StatelessWidget {
   final Map<String, dynamic> post;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
-  const PostCard({super.key, required this.post});
+  const PostCard({
+    super.key,
+    required this.post,
+    this.onEdit,
+    this.onDelete,
+  });
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
@@ -43,7 +51,17 @@ class PostCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final content = post['content'] ?? '';
     final status = post['status'] ?? 'draft';
-    final platforms = List<String>.from(post['platforms'] ?? []);
+
+    // Handle both platforms array and socialAccount object
+    List<String> platforms = [];
+    final socialAccount = post['socialAccount'] as Map<String, dynamic>?;
+    if (socialAccount != null) {
+      final platform = socialAccount['platform'] as String?;
+      if (platform != null) platforms.add(platform);
+    } else if (post['platforms'] != null) {
+      platforms = List<String>.from(post['platforms']);
+    }
+
     final scheduledAt = post['scheduledAt'];
     final publishedAt = post['publishedAt'];
     final mediaUrls = List<String>.from(post['mediaUrls'] ?? []);
@@ -202,6 +220,51 @@ class PostCard extends StatelessWidget {
               ],
             ),
           ],
+
+          // Action Buttons
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              // Edit Button
+              TextButton.icon(
+                onPressed: () {
+                  if (onEdit != null) {
+                    onEdit!();
+                  } else {
+                    // Default navigation
+                    context.push('/posts/edit/${post['id']}', extra: post);
+                  }
+                },
+                icon: Icon(Iconsax.edit, size: 16, color: AppColors.info),
+                label: Text(
+                  'Edit',
+                  style: TextStyle(fontSize: 12, color: AppColors.info),
+                ),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+              if (onDelete != null) ...[
+                const SizedBox(width: 8),
+                TextButton.icon(
+                  onPressed: onDelete,
+                  icon: Icon(Iconsax.trash, size: 16, color: AppColors.error),
+                  label: Text(
+                    'Delete',
+                    style: TextStyle(fontSize: 12, color: AppColors.error),
+                  ),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ],
       ),
     );

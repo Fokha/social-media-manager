@@ -86,9 +86,54 @@ router.get('/:id', authenticate, async (req, res, next) => {
   }
 });
 
+// PUT /api/accounts/:id - Update account settings
+router.put('/:id', authenticate, async (req, res, next) => {
+  try {
+    // Demo mode: simulate update
+    if (req.user.isDemo) {
+      return res.json({
+        success: true,
+        message: 'Account updated successfully',
+        data: { ...req.body, id: req.params.id }
+      });
+    }
+
+    const account = await SocialAccount.findOne({
+      where: { id: req.params.id, userId: req.user.id }
+    });
+
+    if (!account) {
+      throw new AppError('Account not found', 404);
+    }
+
+    const { accountName, displayName, settings } = req.body;
+    await account.update({
+      ...(accountName && { platformDisplayName: accountName }),
+      ...(displayName && { platformDisplayName: displayName }),
+      ...(settings && { settings })
+    });
+
+    res.json({
+      success: true,
+      message: 'Account updated successfully',
+      data: { account }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // DELETE /api/accounts/:id - Disconnect account
 router.delete('/:id', authenticate, async (req, res, next) => {
   try {
+    // Demo mode: simulate disconnect
+    if (req.user.isDemo) {
+      return res.json({
+        success: true,
+        message: 'Account disconnected successfully'
+      });
+    }
+
     const account = await SocialAccount.findOne({
       where: { id: req.params.id, userId: req.user.id }
     });

@@ -19,8 +19,8 @@ class QuickActionCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 90,
-        padding: EdgeInsets.all(12),
+        width: 100,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -43,7 +43,7 @@ class QuickActionCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(10),
@@ -51,16 +51,17 @@ class QuickActionCard extends StatelessWidget {
               child: Icon(
                 icon,
                 color: Colors.white,
-                size: 20,
+                size: 22,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
               title,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
+                height: 1.2,
               ),
               textAlign: TextAlign.center,
               maxLines: 2,

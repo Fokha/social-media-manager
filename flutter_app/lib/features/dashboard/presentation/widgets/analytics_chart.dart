@@ -165,8 +165,8 @@ class _AnalyticsChartState extends State<AnalyticsChart> {
                       getTitlesWidget: (value, meta) {
                         final index = value.toInt();
                         if (index >= 0 && index < _bottomTitles.length) {
-                          return SideTitleWidget(
-                            meta: meta,
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8),
                             child: Text(
                               _bottomTitles[index],
                               style: TextStyle(
@@ -209,7 +209,7 @@ class _AnalyticsChartState extends State<AnalyticsChart> {
                 ],
                 lineTouchData: LineTouchData(
                   touchTooltipData: LineTouchTooltipData(
-                    getTooltipColor: (_) => AppColors.grey800,
+                    tooltipBgColor: AppColors.grey800,
                     getTooltipItems: (touchedSpots) {
                       return touchedSpots.map((spot) {
                         String label;

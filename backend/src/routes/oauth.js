@@ -34,14 +34,110 @@ const buildOAuthUrl = (platform, state) => {
   return `${config.authUrl}?${params.toString()}`;
 };
 
+// GET /api/oauth/:platform/url - Get OAuth URL (for frontend compatibility)
+router.get('/:platform/url', authenticate, async (req, res, next) => {
+  try {
+    const { platform } = req.params;
+
+    // Demo mode: simulate successful connection by adding a new demo account
+    if (req.user.isDemo) {
+      const demoAccounts = {
+        twitter: {
+          id: `demo-twitter-${Date.now()}`,
+          platform: 'twitter',
+          platformUsername: '@new_twitter_account',
+          platformDisplayName: 'New Twitter Account',
+          profilePicture: null,
+          isActive: true,
+          lastSyncAt: new Date().toISOString(),
+          createdAt: new Date().toISOString()
+        },
+        instagram: {
+          id: `demo-instagram-${Date.now()}`,
+          platform: 'instagram',
+          platformUsername: 'new.instagram',
+          platformDisplayName: 'New Instagram Account',
+          profilePicture: null,
+          isActive: true,
+          lastSyncAt: new Date().toISOString(),
+          createdAt: new Date().toISOString()
+        },
+        linkedin: {
+          id: `demo-linkedin-${Date.now()}`,
+          platform: 'linkedin',
+          platformUsername: 'New LinkedIn Profile',
+          platformDisplayName: 'New LinkedIn Profile',
+          profilePicture: null,
+          isActive: true,
+          lastSyncAt: new Date().toISOString(),
+          createdAt: new Date().toISOString()
+        },
+        youtube: {
+          id: `demo-youtube-${Date.now()}`,
+          platform: 'youtube',
+          platformUsername: '@new_youtube_channel',
+          platformDisplayName: 'New YouTube Channel',
+          profilePicture: null,
+          isActive: true,
+          lastSyncAt: new Date().toISOString(),
+          createdAt: new Date().toISOString()
+        },
+        github: {
+          id: `demo-github-${Date.now()}`,
+          platform: 'github',
+          platformUsername: 'new-github-user',
+          platformDisplayName: 'New GitHub User',
+          profilePicture: null,
+          isActive: true,
+          lastSyncAt: new Date().toISOString(),
+          createdAt: new Date().toISOString()
+        }
+      };
+
+      return res.json({
+        success: true,
+        message: `Demo account connected for ${platform}`,
+        data: {
+          account: demoAccounts[platform] || demoAccounts.twitter,
+          isDemoConnection: true
+        }
+      });
+    }
+
+    // Generate state token with user ID
+    const state = Buffer.from(JSON.stringify({
+      userId: req.user.id,
+      timestamp: Date.now()
+    })).toString('base64');
+
+    const authUrl = buildOAuthUrl(platform, state);
+
+    res.json({
+      success: true,
+      data: { authUrl }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // GET /api/oauth/:platform/connect
 router.get('/:platform/connect', authenticate, async (req, res, next) => {
   try {
     const { platform } = req.params;
 
+    // Demo mode: same as /url endpoint
+    if (req.user.isDemo) {
+      return res.json({
+        success: true,
+        message: `Demo mode - ${platform} account connected`,
+        data: { isDemoConnection: true }
+      });
+    }
+
     // Check subscription limits
     const subscription = req.user.subscription;
-    if (!subscription.canAddSocialAccount()) {
+    if (subscription && !subscription.canAddSocialAccount()) {
       throw new AppError('Social account limit reached. Please upgrade your plan.', 403);
     }
 
