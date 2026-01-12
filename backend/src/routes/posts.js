@@ -206,6 +206,25 @@ router.post('/:id/publish', authenticate, async (req, res, next) => {
 // PUT /api/posts/:id - Update post
 router.put('/:id', authenticate, async (req, res, next) => {
   try {
+    // Demo mode: simulate update
+    if (req.user.isDemo) {
+      const { content, contentType, mediaUrls, scheduledAt, hashtags, mentions, status } = req.body;
+      return res.json({
+        success: true,
+        message: 'Post updated successfully',
+        data: {
+          post: {
+            id: req.params.id,
+            content: content || 'Demo post content',
+            contentType: contentType || 'text',
+            status: status || (scheduledAt ? 'scheduled' : 'draft'),
+            scheduledAt: scheduledAt || null,
+            updatedAt: new Date().toISOString()
+          }
+        }
+      });
+    }
+
     const post = await Post.findOne({
       where: { id: req.params.id, userId: req.user.id }
     });
@@ -241,6 +260,14 @@ router.put('/:id', authenticate, async (req, res, next) => {
 // DELETE /api/posts/:id - Delete post
 router.delete('/:id', authenticate, async (req, res, next) => {
   try {
+    // Demo mode: simulate delete
+    if (req.user.isDemo) {
+      return res.json({
+        success: true,
+        message: 'Post deleted successfully'
+      });
+    }
+
     const post = await Post.findOne({
       where: { id: req.params.id, userId: req.user.id }
     });
