@@ -4,6 +4,12 @@ const logger = require('../utils/logger');
 let redisClient = null;
 
 const connectRedis = async () => {
+  // Skip Redis if no URL configured
+  if (!process.env.REDIS_URL) {
+    logger.info('Redis URL not configured, running without Redis');
+    return null;
+  }
+
   try {
     redisClient = createClient({
       url: process.env.REDIS_URL
@@ -15,7 +21,8 @@ const connectRedis = async () => {
     await redisClient.connect();
     return redisClient;
   } catch (error) {
-    logger.error('Redis connection failed:', error);
+    logger.warn('Redis connection failed, running without Redis:', error.message);
+    redisClient = null;
     return null;
   }
 };
