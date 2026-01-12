@@ -38,7 +38,14 @@ class SettingsPage extends StatelessWidget {
                     title: 'Dark Mode',
                     subtitle: 'Use dark theme throughout the app',
                     value: isDarkMode,
-                    onChanged: (value) => cubit.toggleDarkMode(value),
+                    onChanged: (value) {
+                      cubit.toggleDarkMode(value);
+                      _showSettingsFeedback(
+                        context,
+                        value ? 'Dark mode enabled' : 'Light mode enabled',
+                        Iconsax.moon,
+                      );
+                    },
                   ),
                   _buildDivider(),
                   _buildDropdownTile(
@@ -48,7 +55,14 @@ class SettingsPage extends StatelessWidget {
                     title: 'Language',
                     value: state.language,
                     options: ['English', 'Spanish', 'French', 'German', 'Arabic'],
-                    onChanged: (value) => cubit.setLanguage(value!),
+                    onChanged: (value) {
+                      cubit.setLanguage(value!);
+                      _showSettingsFeedback(
+                        context,
+                        'Language changed to $value',
+                        Iconsax.language_square,
+                      );
+                    },
                   ),
                   _buildDivider(),
                   _buildDropdownTile(
@@ -64,7 +78,14 @@ class SettingsPage extends StatelessWidget {
                       'UTC+1 (CET)',
                       'UTC+3 (AST)',
                     ],
-                    onChanged: (value) => cubit.setTimezone(value!),
+                    onChanged: (value) {
+                      cubit.setTimezone(value!);
+                      _showSettingsFeedback(
+                        context,
+                        'Timezone set to $value',
+                        Iconsax.clock,
+                      );
+                    },
                   ),
                 ]),
                 const SizedBox(height: 24),
@@ -80,7 +101,14 @@ class SettingsPage extends StatelessWidget {
                     title: 'All Notifications',
                     subtitle: 'Enable or disable all notifications',
                     value: state.notifications,
-                    onChanged: (value) => cubit.setNotifications(value),
+                    onChanged: (value) {
+                      cubit.setNotifications(value);
+                      _showSettingsFeedback(
+                        context,
+                        value ? 'Notifications enabled' : 'Notifications disabled',
+                        Iconsax.notification,
+                      );
+                    },
                   ),
                   _buildDivider(),
                   _buildSwitchTile(
@@ -91,7 +119,14 @@ class SettingsPage extends StatelessWidget {
                     subtitle: 'Receive updates via email',
                     value: state.emailNotifications,
                     onChanged: state.notifications
-                        ? (value) => cubit.setEmailNotifications(value)
+                        ? (value) {
+                            cubit.setEmailNotifications(value);
+                            _showSettingsFeedback(
+                              context,
+                              value ? 'Email notifications enabled' : 'Email notifications disabled',
+                              Iconsax.sms,
+                            );
+                          }
                         : null,
                   ),
                   _buildDivider(),
@@ -103,7 +138,14 @@ class SettingsPage extends StatelessWidget {
                     subtitle: 'Receive push notifications on device',
                     value: state.pushNotifications,
                     onChanged: state.notifications
-                        ? (value) => cubit.setPushNotifications(value)
+                        ? (value) {
+                            cubit.setPushNotifications(value);
+                            _showSettingsFeedback(
+                              context,
+                              value ? 'Push notifications enabled' : 'Push notifications disabled',
+                              Iconsax.mobile,
+                            );
+                          }
                         : null,
                   ),
                 ]),
@@ -267,6 +309,25 @@ class SettingsPage extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+
+  void _showSettingsFeedback(BuildContext context, String message, IconData icon) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(icon, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: AppColors.primary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 2),
       ),
     );
   }

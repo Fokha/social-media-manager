@@ -1290,19 +1290,35 @@ class _AIQuickAction extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          border: Border.all(color: AppColors.grey200),
+          color: AppColors.info.withOpacity(0.05),
+          border: Border.all(color: AppColors.info.withOpacity(0.2)),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(icon, size: 16, color: AppColors.info),
-            const SizedBox(width: 6),
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: AppColors.info.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Center(
+                child: Icon(icon, size: 14, color: AppColors.info),
+              ),
+            ),
+            const SizedBox(width: 8),
             Text(
               label,
-              style: TextStyle(fontSize: 12, color: AppColors.grey700),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: AppColors.grey700,
+              ),
             ),
           ],
         ),
