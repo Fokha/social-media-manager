@@ -7,6 +7,42 @@ const { Op } = require('sequelize');
 // GET /api/admin/stats - Get admin dashboard stats
 router.get('/stats', authenticate, isAdmin, async (req, res, next) => {
   try {
+    // Demo mode: return mock admin stats
+    if (req.user.isDemo) {
+      return res.json({
+        success: true,
+        data: {
+          totalUsers: 1250,
+          newUsersThisMonth: 87,
+          totalAccounts: 3420,
+          totalPosts: 15780,
+          postsThisMonth: 2340,
+          activeSubscriptions: 456,
+          monthlyRecurringRevenue: 12450.50,
+          totalRevenue: 74703.00,
+          revenueGrowth: 12.5,
+          churnRate: 2.3,
+          apiUsage: {
+            openai: 3250,
+            openaiCost: '32.50',
+            instagram: 1850,
+            instagramCost: 0,
+            twitter: 1200,
+            twitterCost: '75.00',
+            linkedin: 650,
+            linkedinCost: 0,
+            totalCost: '107.50'
+          },
+          recentActivities: [
+            { type: 'user', description: 'New user: john@example.com', time: '5m ago' },
+            { type: 'subscription', description: 'jane@example.com subscribed to pro', time: '1h ago', amount: 29.99 },
+            { type: 'user', description: 'New user: mike@company.co', time: '2h ago' },
+            { type: 'subscription', description: 'startup@tech.io subscribed to business', time: '3h ago', amount: 99.99 }
+          ]
+        }
+      });
+    }
+
     // Get total users count
     const totalUsers = await User.count();
 
@@ -136,6 +172,26 @@ router.get('/stats', authenticate, isAdmin, async (req, res, next) => {
 router.get('/users', authenticate, isAdmin, async (req, res, next) => {
   try {
     const { page = 1, limit = 20, search } = req.query;
+
+    // Demo mode: return mock users
+    if (req.user.isDemo) {
+      const demoUsers = [
+        { id: 'user-1', email: 'john@example.com', firstName: 'John', lastName: 'Doe', role: 'user', isActive: true, createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), subscription: { plan: 'pro', status: 'active' } },
+        { id: 'user-2', email: 'jane@startup.io', firstName: 'Jane', lastName: 'Smith', role: 'user', isActive: true, createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(), subscription: { plan: 'business', status: 'active' } },
+        { id: 'user-3', email: 'mike@company.co', firstName: 'Mike', lastName: 'Johnson', role: 'user', isActive: true, createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), subscription: { plan: 'basic', status: 'active' } },
+        { id: 'user-4', email: 'sarah@agency.com', firstName: 'Sarah', lastName: 'Wilson', role: 'user', isActive: true, createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), subscription: { plan: 'pro', status: 'active' } },
+        { id: 'user-5', email: 'admin@demo.com', firstName: 'Admin', lastName: 'User', role: 'admin', isActive: true, createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(), subscription: { plan: 'enterprise', status: 'active' } }
+      ];
+
+      return res.json({
+        success: true,
+        data: {
+          users: demoUsers,
+          pagination: { total: demoUsers.length, page: parseInt(page), pages: 1 }
+        }
+      });
+    }
+
     const offset = (page - 1) * limit;
 
     const whereClause = search ? {

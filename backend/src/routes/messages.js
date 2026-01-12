@@ -10,6 +10,59 @@ router.get('/', authenticate, async (req, res, next) => {
   try {
     const { platform, accountId, unreadOnly, page = 1, limit = 50 } = req.query;
 
+    // Demo mode: return mock messages
+    if (req.user.isDemo) {
+      const demoMessages = [
+        {
+          id: 'demo-msg-1',
+          conversationId: 'conv-1',
+          direction: 'incoming',
+          senderId: 'user-123',
+          senderName: 'Sarah Marketing',
+          senderAvatar: null,
+          content: 'Hi! I loved your recent post about productivity. Would you be open to a collaboration?',
+          messageType: 'text',
+          isRead: false,
+          platformTimestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+          socialAccount: { id: 'demo-twitter-1', platform: 'twitter', platformUsername: '@demo_brand' }
+        },
+        {
+          id: 'demo-msg-2',
+          conversationId: 'conv-2',
+          direction: 'incoming',
+          senderId: 'user-456',
+          senderName: 'Tech Reviewer',
+          senderAvatar: null,
+          content: 'Great content! Can we feature your product in our next review?',
+          messageType: 'text',
+          isRead: false,
+          platformTimestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+          socialAccount: { id: 'demo-instagram-1', platform: 'instagram', platformUsername: 'demo.brand' }
+        },
+        {
+          id: 'demo-msg-3',
+          conversationId: 'conv-3',
+          direction: 'outgoing',
+          senderId: 'demo-user',
+          senderName: 'Demo Brand',
+          senderAvatar: null,
+          content: 'Thank you for reaching out! We would love to discuss this further.',
+          messageType: 'text',
+          isRead: true,
+          platformTimestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+          socialAccount: { id: 'demo-linkedin-1', platform: 'linkedin', platformUsername: 'Demo Brand Company' }
+        }
+      ];
+
+      return res.json({
+        success: true,
+        data: {
+          messages: demoMessages,
+          pagination: { total: demoMessages.length, page: parseInt(page), pages: 1 }
+        }
+      });
+    }
+
     const accountWhere = { userId: req.user.id, isActive: true };
     if (platform) accountWhere.platform = platform;
     if (accountId) accountWhere.id = accountId;

@@ -11,6 +11,7 @@ import '../widgets/stat_card.dart';
 import '../widgets/account_card.dart';
 import '../widgets/post_card.dart';
 import '../widgets/quick_action_card.dart';
+import '../widgets/analytics_chart.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -74,6 +75,10 @@ class _DashboardView extends StatelessWidget {
                 children: [
                   // Stats Grid
                   _buildStatsGrid(context, state),
+                  const SizedBox(height: 24),
+
+                  // Analytics Chart
+                  const AnalyticsChart(),
                   const SizedBox(height: 24),
 
                   // Quick Actions

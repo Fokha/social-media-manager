@@ -21,6 +21,9 @@ const generateDemoResponse = (platform, topic) => {
     cleanTopic = topic;
   }
 
+  // Capitalize first letter
+  const capitalizedTopic = cleanTopic.charAt(0).toUpperCase() + cleanTopic.slice(1);
+
   // Generate hashtag-friendly version
   const hashtagTopic = cleanTopic
     .split(/\s+/)
@@ -28,11 +31,46 @@ const generateDemoResponse = (platform, topic) => {
     .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase().replace(/[^a-zA-Z0-9]/g, ''))
     .join('');
 
+  // Multiple response templates for variety
+  const twitterTemplates = [
+    `🚀 ${capitalizedTopic} is absolutely amazing! Here's why you should care about it today. What's your take? 💭 #${hashtagTopic} #Trending`,
+    `Hot take: ${capitalizedTopic} is changing everything. Here's what nobody's talking about 🔥 Thread incoming... #${hashtagTopic}`,
+    `3 things I learned about ${cleanTopic} this week:\n\n1️⃣ It's bigger than we thought\n2️⃣ Everyone's missing this\n3️⃣ The future is here\n\nRT if you agree! #${hashtagTopic}`,
+    `Unpopular opinion: ${capitalizedTopic} isn't just a trend - it's the future. Change my mind 👀 #${hashtagTopic} #TechTwitter`
+  ];
+
+  const instagramTemplates = [
+    `✨ Let's talk about ${cleanTopic}! ☕\n\nThere's so much to love about this. Double tap if you agree! 💡\n\n#${hashtagTopic} #Lifestyle #Inspiration #Daily #Motivation #Success`,
+    `POV: You just discovered ${cleanTopic} and it changed everything ✨\n\nSave this for later! 📌\n\n#${hashtagTopic} #ContentCreator #Tips #Growth #Community`,
+    `The secret to ${cleanTopic}? 🤫\n\nIt's simpler than you think. Swipe to learn more ➡️\n\n#${hashtagTopic} #LearnOnInstagram #EducationalContent #MustKnow`,
+    `This is your sign to explore ${cleanTopic} 🌟\n\nComment "YES" if you're ready to start your journey!\n\n#${hashtagTopic} #NewBeginnings #Growth #Mindset #DailyInspiration`
+  ];
+
+  const linkedinTemplates = [
+    `I've been thinking a lot about ${cleanTopic} lately.\n\nHere are my key takeaways:\n\n• It's transforming our industry\n• Early adopters are seeing great results\n• The potential is enormous\n\nWhat's your experience? I'd love to hear your perspective.\n\n#${hashtagTopic} #Innovation #Leadership`,
+    `📊 After 5 years in the industry, here's what I've learned about ${cleanTopic}:\n\n1. Start small, think big\n2. Consistency beats perfection\n3. Network is net worth\n4. Always keep learning\n5. Share your journey\n\nAgree? What would you add?\n\n#${hashtagTopic} #CareerGrowth #ProfessionalDevelopment`,
+    `Controversial opinion about ${cleanTopic}:\n\nMost people approach it wrong.\n\nHere's the framework that actually works:\n\n→ Define your goal\n→ Build systems, not habits\n→ Measure what matters\n→ Iterate ruthlessly\n\nSaved you months of trial and error.\n\n#${hashtagTopic} #Strategy #BusinessTips`,
+    `🎯 The future of ${cleanTopic} is here.\n\nI've spent the last month researching trends, talking to experts, and analyzing data.\n\nMy prediction? This will be the biggest shift we've seen in a decade.\n\nHere's why (and how to prepare):\n\n#${hashtagTopic} #FutureOfWork #Innovation`
+  ];
+
+  const facebookTemplates = [
+    `Hey friends! 👋 Let's chat about ${cleanTopic}. It's been on my mind lately and I think you'll find it interesting too. Drop a comment with your thoughts! 💬`,
+    `🎉 Exciting news about ${cleanTopic}!\n\nI've been exploring this topic and WOW - there's so much to share.\n\nLike this post if you want me to share more! ❤️`,
+    `Question for my friends: What's your experience with ${cleanTopic}?\n\nI'm curious to hear different perspectives. Let's discuss in the comments! 👇`,
+    `Just had an amazing realization about ${cleanTopic} and I had to share it with you all!\n\nThis could be a game-changer for so many people. Share if you agree! 🙌`
+  ];
+
+  const youtubeTemplates = [
+    `🎬 ${capitalizedTopic} - Everything You Need to Know!\n\nIn this video, we'll cover:\n⏱️ 0:00 - Introduction\n⏱️ 2:30 - The Basics\n⏱️ 5:45 - Advanced Tips\n⏱️ 8:20 - Common Mistakes\n⏱️ 11:00 - Final Thoughts\n\nDon't forget to LIKE and SUBSCRIBE! 🔔`,
+    `I Tried ${capitalizedTopic} For 30 Days - Here's What Happened\n\nThe results were INSANE! 🤯\n\nWatch until the end for a special announcement!\n\n#${hashtagTopic} #Challenge #Results`
+  ];
+
   const responses = {
-    twitter: `🚀 ${cleanTopic.charAt(0).toUpperCase() + cleanTopic.slice(1)} is absolutely amazing! Here's why you should care about it today. What's your take? 💭 #${hashtagTopic} #Trending #MustRead`,
-    instagram: `✨ Let's talk about ${cleanTopic}! ☕\n\nThere's so much to love about this. Double tap if you agree! 💡\n\n#${hashtagTopic} #Lifestyle #Inspiration #Daily`,
-    linkedin: `I've been thinking a lot about ${cleanTopic} lately.\n\nHere are my key takeaways:\n• It's transforming our industry\n• Early adopters are seeing great results\n• The potential is enormous\n\nWhat's your experience? I'd love to hear your perspective.`,
-    facebook: `Hey friends! 👋 Let's chat about ${cleanTopic}. It's been on my mind lately and I think you'll find it interesting too. Drop a comment with your thoughts! 💬`,
+    twitter: twitterTemplates[Math.floor(Math.random() * twitterTemplates.length)],
+    instagram: instagramTemplates[Math.floor(Math.random() * instagramTemplates.length)],
+    linkedin: linkedinTemplates[Math.floor(Math.random() * linkedinTemplates.length)],
+    facebook: facebookTemplates[Math.floor(Math.random() * facebookTemplates.length)],
+    youtube: youtubeTemplates[Math.floor(Math.random() * youtubeTemplates.length)],
     default: `Here's something exciting about ${cleanTopic}! This topic deserves more attention. #${hashtagTopic} #Content`
   };
   return responses[platform] || responses.default;

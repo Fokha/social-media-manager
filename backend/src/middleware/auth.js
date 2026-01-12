@@ -17,7 +17,7 @@ const authenticate = async (req, res, next) => {
         name: 'Demo User',
         firstName: 'Demo',
         lastName: 'User',
-        role: 'user',
+        role: 'admin',
         isActive: true,
         isDemo: true, // Flag to identify demo user
         subscription: {
