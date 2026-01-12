@@ -237,6 +237,14 @@ router.put('/:id/read', authenticate, async (req, res, next) => {
 // GET /api/messages/unread-count - Get unread message count
 router.get('/unread-count', authenticate, async (req, res, next) => {
   try {
+    // Demo mode - return mock unread count
+    if (req.user.isDemo) {
+      return res.json({
+        success: true,
+        data: { unreadCount: 5 }
+      });
+    }
+
     const accounts = await SocialAccount.findAll({
       where: { userId: req.user.id, isActive: true },
       attributes: ['id']

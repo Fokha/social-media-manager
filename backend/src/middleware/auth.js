@@ -9,12 +9,16 @@ const authenticate = async (req, res, next) => {
     // Demo mode: If no token provided, use demo user
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       // Create a demo user object with mock subscription
+      // Using a valid UUID format for demo user
       req.user = {
-        id: 'demo-user',
+        id: '00000000-0000-0000-0000-000000000000',
         email: 'demo@socialmanager.com',
         name: 'Demo User',
+        firstName: 'Demo',
+        lastName: 'User',
         role: 'user',
         isActive: true,
+        isDemo: true, // Flag to identify demo user
         subscription: {
           plan: 'pro',
           usage: { aiCreditsUsed: 0, accounts: 0, postsThisMonth: 0 },

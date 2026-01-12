@@ -278,6 +278,26 @@ router.get('/invoices', authenticate, async (req, res, next) => {
 // GET /api/subscriptions/usage - Get current usage
 router.get('/usage', authenticate, async (req, res, next) => {
   try {
+    // Demo mode - return mock subscription data
+    if (req.user.isDemo) {
+      return res.json({
+        success: true,
+        data: {
+          usage: {
+            accounts: 3,
+            postsThisMonth: 15,
+            aiCreditsUsed: 12
+          },
+          limits: {
+            accounts: 10,
+            postsPerMonth: 100,
+            aiCredits: 50
+          },
+          plan: 'pro'
+        }
+      });
+    }
+
     const subscription = await Subscription.findOne({
       where: { userId: req.user.id }
     });
