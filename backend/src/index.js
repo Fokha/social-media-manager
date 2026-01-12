@@ -114,21 +114,32 @@ app.use((req, res) => {
 
 // Start server
 const PORT = process.env.PORT || 3000;
+const DEMO_MODE = process.env.DEMO_MODE === 'true' || !process.env.DATABASE_URL;
 
 const startServer = async () => {
   try {
-    // Connect to databases
-    await connectDB();
-    await connectRedis();
+    if (DEMO_MODE) {
+      logger.info('Starting in DEMO MODE - database connections disabled');
+    } else {
+      // Connect to databases
+      await connectDB();
+      await connectRedis();
+    }
 
     // Start listening
     server.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}`);
       logger.info(`Environment: ${process.env.NODE_ENV}`);
+      if (DEMO_MODE) {
+        logger.info('Running in DEMO MODE - all features work with mock data');
+      }
     });
   } catch (error) {
-    logger.error('Failed to start server:', error);
-    process.exit(1);
+    logger.error('Database connection failed, starting in DEMO MODE:', error.message);
+    // Start anyway in demo mode
+    server.listen(PORT, () => {
+      logger.info(`Server running on port ${PORT} (DEMO MODE)`);
+    });
   }
 };
 

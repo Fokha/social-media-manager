@@ -5,9 +5,10 @@ const { AppError } = require('./errorHandler');
 const authenticate = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
 
-    // Demo mode: If no token provided, use demo user
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // Demo mode: If no token, empty token, or demo-token provided, use demo user
+    if (!token || token === 'demo-token' || token === 'null' || token === 'undefined') {
       // Create a demo user object with mock subscription
       // Using a valid UUID format for demo user
       req.user = {
@@ -28,8 +29,6 @@ const authenticate = async (req, res, next) => {
       };
       return next();
     }
-
-    const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const user = await User.findByPk(decoded.id, {

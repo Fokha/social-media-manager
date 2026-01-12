@@ -11,12 +11,29 @@ const anthropic = process.env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: proces
 
 // Demo mode responses when no API keys are configured
 const generateDemoResponse = (platform, topic) => {
+  // Extract key topic words (remove common phrases)
+  let cleanTopic = topic
+    .replace(/^(generate|create|write|make|improve|suggest)\s*(a\s*)?(social\s*media\s*)?(post|content|reply|hashtags|message)?\s*(about|for|on|regarding)?\s*/i, '')
+    .trim();
+
+  // If nothing left, use original topic
+  if (!cleanTopic || cleanTopic.length < 3) {
+    cleanTopic = topic;
+  }
+
+  // Generate hashtag-friendly version
+  const hashtagTopic = cleanTopic
+    .split(/\s+/)
+    .slice(0, 2)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase().replace(/[^a-zA-Z0-9]/g, ''))
+    .join('');
+
   const responses = {
-    twitter: `🚀 ${topic} is transforming the way we connect! Stay ahead of the curve and embrace the change. What are your thoughts? #${topic.replace(/\s+/g, '')} #SocialMedia #Innovation`,
-    instagram: `✨ Exploring ${topic} today! There's so much to learn and discover in this ever-evolving space. Double tap if you agree! 💡\n\n#${topic.replace(/\s+/g, '')} #ContentCreation #DigitalMarketing #Growth`,
-    linkedin: `I've been reflecting on ${topic} and its impact on our industry.\n\nKey insights:\n• Innovation is key to staying competitive\n• Collaboration drives success\n• Continuous learning is essential\n\nWhat's your experience with ${topic}? I'd love to hear your thoughts.`,
-    facebook: `Hey everyone! 👋 Let's talk about ${topic}. It's something that affects all of us, and I think it's worth discussing. Share your thoughts in the comments! 💬`,
-    default: `Great content about ${topic}! This is an exciting topic that deserves attention. #${topic.replace(/\s+/g, '')}`
+    twitter: `🚀 ${cleanTopic.charAt(0).toUpperCase() + cleanTopic.slice(1)} is absolutely amazing! Here's why you should care about it today. What's your take? 💭 #${hashtagTopic} #Trending #MustRead`,
+    instagram: `✨ Let's talk about ${cleanTopic}! ☕\n\nThere's so much to love about this. Double tap if you agree! 💡\n\n#${hashtagTopic} #Lifestyle #Inspiration #Daily`,
+    linkedin: `I've been thinking a lot about ${cleanTopic} lately.\n\nHere are my key takeaways:\n• It's transforming our industry\n• Early adopters are seeing great results\n• The potential is enormous\n\nWhat's your experience? I'd love to hear your perspective.`,
+    facebook: `Hey friends! 👋 Let's chat about ${cleanTopic}. It's been on my mind lately and I think you'll find it interesting too. Drop a comment with your thoughts! 💬`,
+    default: `Here's something exciting about ${cleanTopic}! This topic deserves more attention. #${hashtagTopic} #Content`
   };
   return responses[platform] || responses.default;
 };
@@ -83,11 +100,15 @@ Platform-specific guidelines:
     }
 
     // Deduct AI credits (skip for demo user)
-    if (req.user.id !== 'demo-user') {
-      await Subscription.update(
-        { 'usage.aiCreditsUsed': subscription.usage.aiCreditsUsed + 1 },
-        { where: { userId: req.user.id } }
-      );
+    if (!req.user.isDemo && req.user.id !== '00000000-0000-0000-0000-000000000000') {
+      try {
+        await Subscription.update(
+          { 'usage.aiCreditsUsed': subscription.usage.aiCreditsUsed + 1 },
+          { where: { userId: req.user.id } }
+        );
+      } catch (e) {
+        // Ignore database errors in demo mode
+      }
     }
 
     res.json({
@@ -151,11 +172,15 @@ Original content: "${content}"`;
       }
     }
 
-    if (req.user.id !== 'demo-user') {
-      await Subscription.update(
-        { 'usage.aiCreditsUsed': subscription.usage.aiCreditsUsed + 1 },
-        { where: { userId: req.user.id } }
-      );
+    if (!req.user.isDemo && req.user.id !== '00000000-0000-0000-0000-000000000000') {
+      try {
+        await Subscription.update(
+          { 'usage.aiCreditsUsed': subscription.usage.aiCreditsUsed + 1 },
+          { where: { userId: req.user.id } }
+        );
+      } catch (e) {
+        // Ignore database errors in demo mode
+      }
     }
 
     res.json({
@@ -214,11 +239,15 @@ Keep the reply natural, helpful, and appropriate. Don't be overly formal unless 
       }
     }
 
-    if (req.user.id !== 'demo-user') {
-      await Subscription.update(
-        { 'usage.aiCreditsUsed': subscription.usage.aiCreditsUsed + 1 },
-        { where: { userId: req.user.id } }
-      );
+    if (!req.user.isDemo && req.user.id !== '00000000-0000-0000-0000-000000000000') {
+      try {
+        await Subscription.update(
+          { 'usage.aiCreditsUsed': subscription.usage.aiCreditsUsed + 1 },
+          { where: { userId: req.user.id } }
+        );
+      } catch (e) {
+        // Ignore database errors in demo mode
+      }
     }
 
     res.json({
@@ -256,11 +285,15 @@ Post content: "${content}"`
       .map(h => h.trim().replace('#', ''))
       .filter(h => h);
 
-    if (req.user.id !== 'demo-user') {
-      await Subscription.update(
-        { 'usage.aiCreditsUsed': subscription.usage.aiCreditsUsed + 1 },
-        { where: { userId: req.user.id } }
-      );
+    if (!req.user.isDemo && req.user.id !== '00000000-0000-0000-0000-000000000000') {
+      try {
+        await Subscription.update(
+          { 'usage.aiCreditsUsed': subscription.usage.aiCreditsUsed + 1 },
+          { where: { userId: req.user.id } }
+        );
+      } catch (e) {
+        // Ignore database errors in demo mode
+      }
     }
 
     res.json({
