@@ -1,0 +1,90 @@
+const jwt = require('jsonwebtoken');
+const { User, Subscription } = require('../models');
+const { AppError } = require('./errorHandler');
+
+const authenticate = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    // Demo mode: If no token provided, use demo user
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      // Create a demo user object with mock subscription
+      req.user = {
+        id: 'demo-user',
+        email: 'demo@socialmanager.com',
+        name: 'Demo User',
+        role: 'user',
+        isActive: true,
+        subscription: {
+          plan: 'pro',
+          usage: { aiCreditsUsed: 0, accounts: 0, postsThisMonth: 0 },
+          limits: { aiCredits: 50, accounts: 10, postsPerMonth: 100 },
+          canUseAI: () => true
+        }
+      };
+      return next();
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findByPk(decoded.id, {
+      include: [{ model: Subscription, as: 'subscription' }]
+    });
+
+    if (!user) {
+      throw new AppError('User not found', 401);
+    }
+
+    if (!user.isActive) {
+      throw new AppError('Account is deactivated', 401);
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+      return next(new AppError('Invalid or expired token', 401));
+    }
+    next(error);
+  }
+};
+
+const authorize = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return next(new AppError('Not authorized to access this resource', 403));
+    }
+    next();
+  };
+};
+
+const checkSubscription = (requiredPlan = 'free') => {
+  const planLevels = ['free', 'basic', 'pro', 'business', 'enterprise'];
+
+  return (req, res, next) => {
+    const userPlan = req.user.subscription?.plan || 'free';
+    const userLevel = planLevels.indexOf(userPlan);
+    const requiredLevel = planLevels.indexOf(requiredPlan);
+
+    if (userLevel < requiredLevel) {
+      return next(new AppError(`This feature requires ${requiredPlan} plan or higher`, 403));
+    }
+    next();
+  };
+};
+
+const generateToken = (userId) => {
+  return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN || '7d'
+  });
+};
+
+const isAdmin = (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return next(new AppError('Admin access required', 403));
+  }
+  next();
+};
+
+module.exports = { authenticate, authorize, checkSubscription, generateToken, isAdmin };
