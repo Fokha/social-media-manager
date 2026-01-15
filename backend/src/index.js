@@ -26,6 +26,10 @@ const aiRoutes = require('./routes/ai');
 const webhookRoutes = require('./routes/webhooks');
 const adminRoutes = require('./routes/admin');
 const uploadRoutes = require('./routes/uploads');
+const analyticsRoutes = require('./routes/analytics');
+const bulkRoutes = require('./routes/bulk');
+const teamRoutes = require('./routes/teams');
+const webhookManagementRoutes = require('./routes/webhookManagement');
 
 // Import middleware
 const { errorHandler } = require('./middleware/errorHandler');
@@ -96,6 +100,10 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/uploads', uploadRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/bulk', bulkRoutes);
+app.use('/api/teams', teamRoutes);
+app.use('/api/webhook-endpoints', webhookManagementRoutes);
 
 // Serve uploaded files
 const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, '../uploads');

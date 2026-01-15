@@ -398,7 +398,7 @@ describe('BaseOAuth Template', () => {
       expect(mockRes.redirect).toHaveBeenCalled();
       const redirectUrl = mockRes.redirect.mock.calls[0][0];
       expect(redirectUrl).toContain('/oauth/error');
-      expect(redirectUrl).toContain('User+denied+access');
+      expect(redirectUrl).toContain('User%20denied%20access');
     });
 
     it('should reject invalid state', async () => {

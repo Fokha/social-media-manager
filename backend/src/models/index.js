@@ -6,6 +6,11 @@ const Message = require('./Message');
 const Subscription = require('./Subscription');
 const Notification = require('./Notification');
 
+// Factory-style models
+const Team = require('./Team')(sequelize);
+const TeamMember = require('./TeamMember')(sequelize);
+const Webhook = require('./Webhook')(sequelize);
+
 // Define Associations
 
 // User <-> SocialAccount (One-to-Many)
@@ -40,6 +45,22 @@ Notification.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 SocialAccount.hasMany(Notification, { foreignKey: 'socialAccountId', as: 'notifications' });
 Notification.belongsTo(SocialAccount, { foreignKey: 'socialAccountId', as: 'socialAccount' });
 
+// User <-> Team (One-to-Many as owner)
+User.hasMany(Team, { foreignKey: 'ownerId', as: 'ownedTeams' });
+Team.belongsTo(User, { foreignKey: 'ownerId', as: 'owner' });
+
+// Team <-> TeamMember (One-to-Many)
+Team.hasMany(TeamMember, { foreignKey: 'teamId', as: 'members' });
+TeamMember.belongsTo(Team, { foreignKey: 'teamId', as: 'team' });
+
+// User <-> TeamMember (One-to-Many)
+User.hasMany(TeamMember, { foreignKey: 'userId', as: 'teamMemberships' });
+TeamMember.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+// User <-> Webhook (One-to-Many)
+User.hasMany(Webhook, { foreignKey: 'userId', as: 'webhooks' });
+Webhook.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
 module.exports = {
   sequelize,
   User,
@@ -47,5 +68,8 @@ module.exports = {
   Post,
   Message,
   Subscription,
-  Notification
+  Notification,
+  Team,
+  TeamMember,
+  Webhook
 };
