@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const API_URL = process.env.API_URL || 'http://localhost:3001';
+const API_URL = process.env.API_URL || 'http://localhost:3000';
 
 test.describe('API Health Checks', () => {
   test('should have healthy backend API', async ({ request }) => {
