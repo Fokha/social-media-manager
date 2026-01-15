@@ -1,6 +1,6 @@
 {
   "name": "social-media-manager-backend",
-  "version": "1.0.0",
+  "version": "2.1.0",
   "description": "Business Social Media Manager - Backend API",
   "main": "src/index.js",
   "scripts": {
