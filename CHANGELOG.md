@@ -2,6 +2,76 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.0] - 2026-01-15
+
+### Added
+- **Code Templates**
+  - `BaseCRUD` template for unified CRUD operations
+  - `BaseOAuth` template for unified OAuth2 flows
+  - `CRUDRoutes` helper for route generation
+  - Platform presets for Twitter, Instagram, LinkedIn, YouTube, GitHub
+
+- **Real-Time WebSocket Notifications**
+  - `socketService.js` - Full Socket.IO integration
+  - User connection tracking (online status)
+  - Post status updates (publishing/published/failed)
+  - New message notifications
+  - Account connection updates
+  - System announcements
+  - Frontend `useSocket.js` hook with React Query integration
+
+- **Media Upload System**
+  - `mediaService.js` - Full media handling service
+  - Sharp image processing/optimization
+  - Thumbnail generation (300x300 default)
+  - Platform-specific image resizing
+  - Local storage provider (`localStorage.js`)
+  - Upload routes: `/api/uploads/single`, `/api/uploads/multiple`, `/api/uploads/resize`
+  - Multer integration with file type validation
+
+- **Post Scheduling Queue**
+  - Bull queue with Redis backend
+  - Automatic retry with exponential backoff
+  - Real-time status notifications on publish/fail
+  - Job management (schedule, remove, retry)
+
+- **Service Layer Refactoring**
+  - `PostService` extending BaseCRUD with custom methods
+  - `AccountService` extending BaseCRUD
+  - `MessageService` extending BaseCRUD
+  - `NotificationService` extending BaseCRUD
+
+- **Frontend Hooks**
+  - `usePosts.js` - Post CRUD with React Query
+  - `useAccounts.js` - Account management hooks
+  - `useMessages.js` - Message/conversation hooks
+  - `useSocket.js` - WebSocket hooks for real-time updates
+
+- **Deployment Infrastructure**
+  - `deploy.sh` - Automated deployment script
+  - `nginx.conf` - Production nginx configuration
+  - `.env.example` - Environment template
+
+- **Testing**
+  - `BaseCRUD.test.js` - Full CRUD template tests
+  - `BaseOAuth.test.js` - OAuth flow tests
+  - `socketService.test.js` - WebSocket tests
+  - `mediaService.test.js` - Media handling tests
+  - 111/114 tests passing (97% pass rate)
+
+### Changed
+- OAuth routes refactored to use BaseOAuth template
+- Post queue now emits real-time socket notifications
+- Index.js updated with socket service initialization
+
+### Technical Details
+- Sharp for image processing (jpeg, png, webp, gif support)
+- 10MB file size limit, 10 files per upload
+- Platform dimensions: Twitter (1200x675), Instagram (1080x1080), LinkedIn (1200x627)
+- Socket rooms for user, post, and conversation events
+
+---
+
 ## [2.0.0] - 2026-01-12
 
 ### Removed

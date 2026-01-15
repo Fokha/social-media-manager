@@ -1,6 +1,7 @@
 const Bull = require('bull');
 const { Post, SocialAccount, Notification } = require('../../models');
 const logger = require('../../utils/logger');
+const socketService = require('../socketService');
 
 // Create the queue
 const postQueue = new Bull('post-publishing', process.env.REDIS_URL, {
@@ -38,6 +39,9 @@ postQueue.process('publish', async (job) => {
     // Update status to publishing
     await post.update({ status: 'publishing' });
 
+    // Notify user that publishing has started
+    socketService.postStatusUpdate(post.userId, postId, 'publishing');
+
     // Get platform service
     const PlatformService = require(`../platforms/${post.socialAccount.platform}`);
     const service = new PlatformService(post.socialAccount);
@@ -54,7 +58,7 @@ postQueue.process('publish', async (job) => {
     });
 
     // Create success notification
-    await Notification.create({
+    const notification = await Notification.create({
       userId: post.userId,
       socialAccountId: post.socialAccountId,
       type: 'post_published',
@@ -63,6 +67,10 @@ postQueue.process('publish', async (job) => {
       link: result.url
     });
 
+    // Send real-time notification
+    socketService.postPublished(post.userId, post);
+    socketService.sendNotification(post.userId, notification.toJSON());
+
     logger.info(`Post ${postId} published successfully`);
 
     return { success: true, postId, url: result.url };
@@ -70,26 +78,34 @@ postQueue.process('publish', async (job) => {
     logger.error(`Failed to publish post ${postId}:`, error);
 
     // Update post with failure
-    await Post.update(
-      {
+    const failedPost = await Post.findByPk(postId);
+    if (failedPost) {
+      await failedPost.update({
         status: 'failed',
         errorMessage: error.message,
-        retryCount: Bull.sequelize.literal('retry_count + 1')
-      },
-      { where: { id: postId } }
-    );
+        retryCount: (failedPost.retryCount || 0) + 1
+      });
+    }
 
-    const post = await Post.findByPk(postId);
-
-    // Create failure notification
-    await Notification.create({
-      userId: post.userId,
-      socialAccountId: post.socialAccountId,
-      type: 'post_failed',
-      title: 'Post Failed',
-      message: `Failed to publish your ${post.socialAccount?.platform} post: ${error.message}`,
-      priority: 'high'
+    const post = await Post.findByPk(postId, {
+      include: [{ model: SocialAccount, as: 'socialAccount' }]
     });
+
+    if (post) {
+      // Create failure notification
+      const notification = await Notification.create({
+        userId: post.userId,
+        socialAccountId: post.socialAccountId,
+        type: 'post_failed',
+        title: 'Post Failed',
+        message: `Failed to publish your ${post.socialAccount?.platform} post: ${error.message}`,
+        priority: 'high'
+      });
+
+      // Send real-time notification
+      socketService.postFailed(post.userId, postId, error);
+      socketService.sendNotification(post.userId, notification.toJSON());
+    }
 
     throw error;
   }

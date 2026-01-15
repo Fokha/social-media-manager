@@ -52,7 +52,7 @@ class OAuthConfig {
   ];
 
   // Backend API endpoints
-  static const String backendBaseUrl = 'http://localhost:3000/api';
+  static const String backendBaseUrl = 'http://145.241.106.50:3000/api';
   static const String authEndpoint = '/auth';
   static const String socialLoginEndpoint = '/auth/social';
   static const String refreshTokenEndpoint = '/auth/refresh';

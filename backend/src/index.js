@@ -5,6 +5,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const http = require('http');
+const path = require('path');
 const { Server } = require('socket.io');
 
 const logger = require('./utils/logger');
@@ -24,6 +25,7 @@ const notificationRoutes = require('./routes/notifications');
 const aiRoutes = require('./routes/ai');
 const webhookRoutes = require('./routes/webhooks');
 const adminRoutes = require('./routes/admin');
+const uploadRoutes = require('./routes/uploads');
 
 // Import middleware
 const { errorHandler } = require('./middleware/errorHandler');
@@ -35,7 +37,7 @@ const server = http.createServer(app);
 // Socket.io setup for real-time notifications
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3001',
+    origin: '*',
     methods: ['GET', 'POST']
   }
 });
@@ -45,22 +47,10 @@ app.set('io', io);
 
 // Security middleware
 app.use(helmet());
+// Allow all origins for cross-platform app (mobile, web, desktop)
 app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, etc)
-    if (!origin) return callback(null, true);
-    // In development, allow all localhost origins
-    if (process.env.NODE_ENV === 'development' && origin.includes('localhost')) {
-      return callback(null, true);
-    }
-    // In production, check against FRONTEND_URL
-    const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:3001';
-    if (origin === allowedOrigin) {
-      return callback(null, true);
-    }
-    callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true
+  origin: '*',
+  credentials: false
 }));
 
 // Request parsing
@@ -105,20 +95,15 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/uploads', uploadRoutes);
 
-// Socket.io connection handling
-io.on('connection', (socket) => {
-  logger.info(`Client connected: ${socket.id}`);
+// Serve uploaded files
+const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, '../uploads');
+app.use('/uploads', express.static(uploadDir));
 
-  socket.on('join', (userId) => {
-    socket.join(`user:${userId}`);
-    logger.info(`User ${userId} joined their room`);
-  });
-
-  socket.on('disconnect', () => {
-    logger.info(`Client disconnected: ${socket.id}`);
-  });
-});
+// Initialize Socket service for real-time notifications
+const socketService = require('./services/socketService');
+socketService.initialize(io);
 
 // Error handling
 app.use(errorHandler);

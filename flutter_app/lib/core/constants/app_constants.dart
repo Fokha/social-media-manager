@@ -5,8 +5,8 @@ class AppConstants {
   static const String appVersion = '1.0.0';
 
   // API
-  static const String baseUrl = 'http://localhost:3000/api';
-  static const String socketUrl = 'http://localhost:3000';
+  static const String baseUrl = 'http://145.241.106.50:3000/api';
+  static const String socketUrl = 'http://145.241.106.50:3000';
 
   // Storage Keys
   static const String tokenKey = 'auth_token';
